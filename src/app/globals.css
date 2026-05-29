@@ -172,7 +172,7 @@ html, body {
   }
   @media (min-width: 720px) { .nav-links { display: flex; } }
   .nav-links a {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-13);
     color: var(--fg-2);
     text-decoration: none;
@@ -253,7 +253,7 @@ html, body {
   }
 
   .eyebrow {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-12);
     color: var(--fg-2);
     letter-spacing: 0.05em;
@@ -318,7 +318,7 @@ html, body {
     background: transparent;
     color: var(--fg-1);
     padding: 12px 6px;
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-13);
     letter-spacing: var(--tracking-mono);
   }
@@ -352,7 +352,7 @@ html, body {
     .proof-tile:last-child { padding-right: 0; }
   }
   .proof-tile .label {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-12);
     color: var(--fg-2);
     letter-spacing: 0.08em;
@@ -379,7 +379,7 @@ html, body {
     flex-wrap: wrap;
   }
   .section-head .index {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-12);
     color: var(--fg-2);
     letter-spacing: 0.08em;
@@ -435,7 +435,7 @@ html, body {
   }
 
   .case .case-meta {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-12);
     color: var(--fg-2);
     letter-spacing: 0.08em;
@@ -468,14 +468,14 @@ html, body {
   .tags {
     display: flex; flex-wrap: wrap;
     gap: 0;
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-12);
     color: var(--fg-2);
     letter-spacing: 0.02em;
   }
   .tags .sep { color: var(--fg-3); padding: 0 8px; }
   .read {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-12);
     color: var(--accent-fg);
     letter-spacing: 0.04em;
@@ -503,7 +503,7 @@ html, body {
     font-weight: 500;
   }
   .ghost-link {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-13);
     color: var(--accent-fg);
     text-decoration: none;
@@ -545,7 +545,7 @@ html, body {
     background: var(--bg-3);
   }
   .artifact .a-meta {
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-12);
     color: var(--fg-2);
     letter-spacing: 0.08em;
@@ -599,7 +599,7 @@ html, body {
   .foot-center {
     display: flex; gap: var(--space-6);
     justify-content: center;
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-13);
     letter-spacing: var(--tracking-mono);
     flex-wrap: wrap;
@@ -623,7 +623,7 @@ html, body {
   .foot-bottom {
     border-top: 1px solid var(--hairline);
     padding-top: var(--space-6);
-    font-family: var(--font-mono);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-12);
     color: var(--fg-3);
     letter-spacing: 0.02em;
