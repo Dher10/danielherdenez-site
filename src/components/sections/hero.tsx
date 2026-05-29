@@ -25,16 +25,14 @@ export default function Hero() {
             rel="noopener noreferrer"
             className="btn btn-ghost"
           >
-            LinkedIn <span className="arrow up-right">↗</span>
-          </a>
+            LinkedIn <span className="arrow up-right">↗</span></a>
           <a
             href="https://github.com"
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-ghost"
           >
-            GitHub <span className="arrow up-right">↗</span>
-          </a>
+            GitHub <span className="arrow up-right">↗</span></a>
         </div>
       </div>
     </section>
