@@ -2,7 +2,7 @@ import Monogram from '@/components/shared/monogram';
 
 export default function Footer() {
   return (
-    <footer id="contact" data-screen-label="05 Footer">
+    <footer id="contact" className="footer-inner" data-screen-label="05 Footer">
       <div className="container">
         <div className="foot-grid">
           <div>
@@ -14,7 +14,7 @@ export default function Footer() {
             <a href="#writing">Writing &amp; Artifacts</a>
           </nav>
           <div className="foot-socials">
-            <a href="mailto:hello@danielherdenez.com" aria-label="Email">
+            <a className="social-link" href="mailto:hello@danielherdenez.com" aria-label="Email">
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -28,6 +28,7 @@ export default function Footer() {
               </svg>
             </a>
             <a
+              className="social-link"
               href="https://www.linkedin.com"
               target="_blank"
               rel="noopener noreferrer"
@@ -47,6 +48,7 @@ export default function Footer() {
               </svg>
             </a>
             <a
+              className="social-link"
               href="https://github.com"
               target="_blank"
               rel="noopener noreferrer"

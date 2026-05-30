@@ -1,11 +1,19 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { Menu, X } from 'lucide-react';
 import Monogram from '@/components/shared/monogram';
 import ThemeToggle from '@/components/shared/theme-toggle';
 
 export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const navLinks = [
+    { href: '#work', label: 'Work', id: 'work' },
+    { href: '#about', label: 'About', id: 'about' },
+    { href: '#writing', label: 'Writing & Artifacts', id: 'writing' },
+  ];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -36,14 +44,41 @@ export default function Nav() {
       <div className="nav-inner">
         <Monogram />
         <nav className="nav-links" aria-label="Primary">
-          <a href="#work" className={activeSection === 'work' ? 'active' : ''}>Work</a>
-          <a href="#about" className={activeSection === 'about' ? 'active' : ''}>About</a>
-          <a href="#writing" className={activeSection === 'writing' ? 'active' : ''}>
-            Writing &amp; Artifacts
-          </a>
+          {navLinks.map((link) => (
+            <a
+              key={link.id}
+              href={link.href}
+              className={activeSection === link.id ? 'active' : ''}
+            >
+              {link.label}
+            </a>
+          ))}
         </nav>
-        <ThemeToggle />
+        <div className="nav-actions">
+          <ThemeToggle />
+          <button
+            className="mobile-menu-toggle"
+            type="button"
+            aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={menuOpen}
+            aria-controls="mobile-nav-menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? <X size={20} strokeWidth={1.6} /> : <Menu size={20} strokeWidth={1.6} />}
+          </button>
+        </div>
       </div>
+      <nav
+        id="mobile-nav-menu"
+        className={`mobile-nav-menu${menuOpen ? ' open' : ''}`}
+        aria-label="Mobile primary"
+      >
+        {navLinks.map((link) => (
+          <a key={link.id} href={link.href} onClick={() => setMenuOpen(false)}>
+            {link.label}
+          </a>
+        ))}
+      </nav>
     </header>
   );
 }

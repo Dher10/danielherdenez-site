@@ -3,7 +3,7 @@ import SectionHead from '@/components/shared/section-head';
 
 export default function Writing() {
   return (
-    <section id="writing" data-screen-label="04 Writing">
+    <section id="writing" className="writing" data-screen-label="04 Writing">
       <div className="container">
         <Reveal>
           <SectionHead
