@@ -6,7 +6,9 @@ This bundle contains the **approved home page design** for `danielherdenez.com` 
 
 The home page is the first of several screens. Other routes (case studies, about, writing) will follow in subsequent handoffs; for now, internal links in the prototype use `#` anchors.
 
-> **Revision — 2026-05-29 (post-launch):** The light-mode surface palette was revised after the V1 launch. The page background moved to a warm cream, and work/artifact cards moved to a sage tint with a desaturated-sage hairline plus a soft shadow. Sage remains the single accent; cream and sage now define the light-mode surfaces, with separation carried by warm/cool temperature contrast rather than heavier borders. **Dark mode is unchanged.** Updated values live in **Design Tokens → Colors — Light** and in the **Card hover** interaction note below; the rest of this document reflects the original V1 handoff.
+> **Revision — 2026-05-29 (post-launch):** Two changes were made after the V1 launch:
+> 1. **Light-mode palette.** The page background moved to a warm cream and work/artifact cards moved to a sage tint with a desaturated-sage hairline plus a soft shadow. Sage remains the single accent; cream and sage now define the light-mode surfaces, with separation carried by warm/cool temperature contrast rather than heavier borders. Dark mode is unchanged. Updated values live in **Design Tokens → Colors — Light** and in the **Card hover** interaction note below.
+> 2. **Theme default.** Dark mode is now the universal default for all new visitors. `prefers-color-scheme` is no longer used as a fallback — the bootstrap script ignores the OS preference and applies light only if the user has previously toggled it. Updated references are in **Conventions**, **layout.tsx requirements**, and **Theme toggle** below.
 
 ---
 
@@ -44,7 +46,7 @@ When recreating in Next.js, match values exactly. Where the prototype uses CSS v
 ### Conventions
 
 - **Mobile-first responsive.** Build mobile breakpoints first; layer up via Tailwind's `md:` / `lg:` modifiers. The prototype's primary breakpoints are at `768px` and `1024px`.
-- **Respect `prefers-color-scheme`.** Default to the user's OS preference on first load; persist their manual toggle in `localStorage` under key `dh-theme`. The toggle should flip a `data-theme` attribute on `<html>` — never use a class.
+- **Dark mode is the universal default.** Every new visitor lands in dark mode regardless of OS preference. Light mode is available via the toggle and persisted in `localStorage` under key `dh-theme`. The toggle flips a `data-theme` attribute on `<html>` — never use a class. `prefers-color-scheme` is intentionally ignored.
 - **WCAG AA minimum.** All text/background pairings in the token table below meet 4.5:1 (body) or 3:1 (large text ≥ 18.66px bold / 24px regular). Don't introduce new colors without checking.
 - **Reduced motion.** Honor `prefers-reduced-motion: reduce`. The prototype already disables animations and transitions globally under this query — match that behavior in Framer Motion via `useReducedMotion()`.
 
@@ -84,7 +86,7 @@ components/
 
 - Load Geist Sans, Geist Mono, and Instrument Serif via `next/font/local` (font files are in `/fonts` of this bundle — copy to `/public/fonts/` or use `next/font` import paths).
 - Expose font families as CSS variables (`--font-sans`, `--font-serif`, `--font-mono`) on `<html>`.
-- Render an **inline `<script>` before hydration** that reads `localStorage.getItem('dh-theme')`, falls back to `prefers-color-scheme`, and sets `data-theme="light"` (or removes it) on `<html>`. This prevents a flash of wrong theme.
+- Render an **inline `<script>` before hydration** that reads `localStorage.getItem('dh-theme')` and applies `data-theme="light"` only if the user has previously chosen light. Dark is the default for all new visitors; `prefers-color-scheme` is intentionally ignored. This prevents a flash of wrong theme.
 - Add `suppressHydrationWarning` to the `<html>` element, since the bootstrap script sets `data-theme` before React hydrates and intentionally differs from the server-rendered markup.
 - `<meta name="color-scheme" content="dark light">` so form controls, scrollbars, etc. adapt.
 
@@ -233,7 +235,7 @@ There is **no other logo lockup or icon**. Do not generate one.
 ## Interactions & Behavior
 
 ### Theme toggle
-- Reads `localStorage.dh-theme`. Falls back to `prefers-color-scheme`.
+- Reads `localStorage.dh-theme`. Dark is the universal default; light activates only if the user has previously toggled it. `prefers-color-scheme` is not used.
 - Sets/removes `data-theme="light"` on `<html>`.
 - Persists choice immediately on click.
 - **No-flash bootstrap**: Inline script in `<head>` before any rendering. `<html>` carries `suppressHydrationWarning` so React ignores the intentional server/client `data-theme` mismatch.
