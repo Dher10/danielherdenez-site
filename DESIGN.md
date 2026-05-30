@@ -6,6 +6,8 @@ This bundle contains the **approved home page design** for `danielherdenez.com` 
 
 The home page is the first of several screens. Other routes (case studies, about, writing) will follow in subsequent handoffs; for now, internal links in the prototype use `#` anchors.
 
+> **Revision — 2026-05-29 (post-launch):** The light-mode surface palette was revised after the V1 launch. The page background moved to a warm cream, and work/artifact cards moved to a sage tint with a desaturated-sage hairline plus a soft shadow. Sage remains the single accent; cream and sage now define the light-mode surfaces, with separation carried by warm/cool temperature contrast rather than heavier borders. **Dark mode is unchanged.** Updated values live in **Design Tokens → Colors — Light** and in the **Card hover** interaction note below; the rest of this document reflects the original V1 handoff.
+
 ---
 
 ## About the Design Files
@@ -83,6 +85,7 @@ components/
 - Load Geist Sans, Geist Mono, and Instrument Serif via `next/font/local` (font files are in `/fonts` of this bundle — copy to `/public/fonts/` or use `next/font` import paths).
 - Expose font families as CSS variables (`--font-sans`, `--font-serif`, `--font-mono`) on `<html>`.
 - Render an **inline `<script>` before hydration** that reads `localStorage.getItem('dh-theme')`, falls back to `prefers-color-scheme`, and sets `data-theme="light"` (or removes it) on `<html>`. This prevents a flash of wrong theme.
+- Add `suppressHydrationWarning` to the `<html>` element, since the bootstrap script sets `data-theme` before React hydrates and intentionally differs from the server-rendered markup.
 - `<meta name="color-scheme" content="dark light">` so form controls, scrollbars, etc. adapt.
 
 ### `app/globals.css` requirements
@@ -105,7 +108,7 @@ Use Tailwind v4's `@theme` to expose every token from `tokens/colors_and_type.cs
 
 /* Override tokens under light mode */
 [data-theme="light"] {
-  --color-bg-0: #FAFAF7;
+  --color-bg-0: #F7F3EC;
   /* ...etc */
 }
 ```
@@ -176,7 +179,7 @@ There is **no other logo lockup or icon**. Do not generate one.
   - Card 2: `col-start-7 col-span-6`
   - Card 3: `col-start-3 col-span-8` (offset on row 2)
   - Gap: `var(--space-4)` (16px). Mobile: single column.
-- **Each card**: `<a>` link, `var(--bg-2)` background, 1px `var(--hairline)` border, `var(--radius-lg)` (12px), padding `var(--space-8)` / `var(--space-10)` desktop. Flex column gap `var(--space-5)`, min-height 280px.
+- **Each card**: `<a>` link, `var(--bg-2)` background, 1px `var(--hairline)` border, `var(--radius-lg)` (12px), padding `var(--space-8)` / `var(--space-10)` desktop. Flex column gap `var(--space-5)`, min-height 280px. (In light mode the border and shadow are overridden — see **Card hover** and **Colors — Light**.)
   - Hover: lifts `-2px`, background → `var(--bg-3)`, border → `var(--hairline-strong)`.
   - Stagger reveal-on-scroll with 0ms / 80ms / 160ms delays (Framer Motion `motion.a` with `whileInView`).
   - Meta line: `case · 01` — Geist Mono 12px, `var(--fg-2)`, letter-spacing 0.08em.
@@ -210,7 +213,7 @@ There is **no other logo lockup or icon**. Do not generate one.
 - **Border-top**: 1px `var(--hairline)`.
 - **Section head**: Index `02 — Writing & Artifacts`, heading **"Notes, frameworks, and works in progress."**
 - **Grid**: 2 equal columns desktop, 1 column mobile, gap `var(--space-4)`.
-- **Artifact cards**: Same styling as work cards (bg-2, hairline border, radius-lg, padding `var(--space-10)`, min-height 240px, same hover behavior).
+- **Artifact cards**: Same styling as work cards (bg-2, hairline border, radius-lg, padding `var(--space-10)`, min-height 240px, same hover behavior). The same light-mode border/shadow override applies (see **Colors — Light**).
 - **Cards**:
   1. Meta `repository · github` → "PM-AI-Prompts" → "A public library documenting prompts, workflows, and frameworks for AI-assisted product management." → "View on GitHub ↗"
   2. Meta `essays · coming soon` → "Essays coming soon" → "Notes on AI product management, operations discipline, and how to ship software that earns trust." → "Reach out →"
@@ -233,7 +236,7 @@ There is **no other logo lockup or icon**. Do not generate one.
 - Reads `localStorage.dh-theme`. Falls back to `prefers-color-scheme`.
 - Sets/removes `data-theme="light"` on `<html>`.
 - Persists choice immediately on click.
-- **No-flash bootstrap**: Inline script in `<head>` before any rendering.
+- **No-flash bootstrap**: Inline script in `<head>` before any rendering. `<html>` carries `suppressHydrationWarning` so React ignores the intentional server/client `data-theme` mismatch.
 - Background and color transitions: `200ms ease-out` (handled globally on `html, body` in `globals.css`).
 
 ### Sticky nav
@@ -249,11 +252,13 @@ There is **no other logo lockup or icon**. Do not generate one.
 - From `{opacity: 0, y: 16}` to `{opacity: 1, y: 0}`, duration 700ms, `cubic-bezier(0.16, 1, 0.3, 1)`.
 - Threshold 0.05, `rootMargin: '0px 0px -10% 0px'`. Trigger once.
 - **Framer Motion**: use `whileInView` with `viewport={{ once: true, margin: "0px 0px -10% 0px" }}`.
+- Under `prefers-reduced-motion: reduce` (or OS animation settings disabled), content renders in its final state with no fade. This is intended behavior, not a bug.
 
 ### Card hover
 - `transform: translateY(-2px)`, transition `200ms ease-out`.
 - Background fades `bg-2 → bg-3`.
 - Border fades `hairline → hairline-strong`.
+- **Light mode override**: cards use a desaturated-sage border instead of the hairline, plus a soft shadow. Border fades `#DDE7E2 → #CFE0D8` on hover; shadow is `0 1px 3px rgba(74, 107, 95, 0.06)`. Scoped to `[data-theme="light"] .case` and `[data-theme="light"] .artifact` (and their `:hover`) so dark-mode card styling is untouched. See **Colors — Light**.
 - "read →" arrow gap expands from `6px → 10px`.
 
 ### Hero mesh animation
@@ -306,23 +311,47 @@ The complete source of truth is `tokens/colors_and_type.css` in this bundle. Hig
 
 ### Colors — Light
 
-| Token | Value |
+> **Updated 2026-05-29.** Surfaces moved from a neutral warm-white/sand palette to a warm cream background with sage-tinted cards. Separation is carried by warm/cool temperature contrast (cream background vs. cool sage cards), a desaturated-sage card hairline, and a soft shadow — not by darker surfaces or heavy borders.
+
+| Token | Value | Use |
+|---|---|---|
+| `--bg-0` | `#F7F3EC` | Page background (warm cream) |
+| `--bg-1` | `#FBF8F3` | Raised surface (warm off-white) |
+| `--bg-2` | `#EDF2F0` | Card background (sage tint) |
+| `--bg-3` | `#E2EDE8` | Card hover (deeper sage tint) |
+| `--fg-0` | `#1A1A1C` | Primary text |
+| `--fg-1` | `#3F3E3A` | Secondary text |
+| `--fg-2` | `#6F6E68` | Tertiary / meta |
+| `--fg-3` | `#A3A199` | Disabled / placeholder |
+| `--hairline` | `rgba(26, 26, 28, 0.08)` | Dividers, borders (nav, hero, proof, sections) |
+| `--hairline-strong` | `rgba(26, 26, 28, 0.14)` | Hover borders (non-card) |
+| `--accent-fg` | `#4A6B5F` | Sage accent text/link |
+| `--accent-bg` | `#4A6B5F` | Sage accent fill |
+| `--accent-ink` | `#FAFAF7` | Text on accent fill |
+| `--accent-soft` | `rgba(74, 107, 95, 0.10)` | Soft sage tint |
+| `--accent-hover` | `#3E5A50` | Accent hover state |
+
+**Light-mode card treatment (cards only).** Work cards (`.case`) and artifact cards (`.artifact`) override the default hairline border in light mode and add a soft shadow. Dark mode is unchanged.
+
+| Property | Value |
 |---|---|
-| `--bg-0` | `#FAFAF7` |
-| `--bg-1` | `#FFFFFF` |
-| `--bg-2` | `#F4F2EC` |
-| `--bg-3` | `#ECE9E2` |
-| `--fg-0` | `#1A1A1C` |
-| `--fg-1` | `#3F3E3A` |
-| `--fg-2` | `#6F6E68` |
-| `--fg-3` | `#A3A199` |
-| `--hairline` | `rgba(26, 26, 28, 0.08)` |
-| `--hairline-strong` | `rgba(26, 26, 28, 0.14)` |
-| `--accent-fg` | `#4A6B5F` |
-| `--accent-bg` | `#4A6B5F` |
-| `--accent-ink` | `#FAFAF7` |
-| `--accent-soft` | `rgba(74, 107, 95, 0.10)` |
-| `--accent-hover` | `#3E5A50` |
+| Card border | `#DDE7E2` (1px, desaturated sage) |
+| Card border (hover) | `#CFE0D8` |
+| Card shadow | `0 1px 3px rgba(74, 107, 95, 0.06)` |
+
+Implemented as light-only overrides scoped to `[data-theme="light"] .case` / `[data-theme="light"] .artifact` (plus `:hover`):
+
+```css
+[data-theme="light"] .case,
+[data-theme="light"] .artifact {
+  border-color: #DDE7E2;
+  box-shadow: 0 1px 3px rgba(74, 107, 95, 0.06);
+}
+[data-theme="light"] .case:hover,
+[data-theme="light"] .artifact:hover {
+  border-color: #CFE0D8;
+}
+```
 
 ### Typography
 
@@ -428,6 +457,8 @@ In `/screenshots/`:
 - `home-light-01-hero.png` through `home-light-05-footer.png` — five section captures of light mode.
 
 These are captured at 909×540 each from the prototype iframe. Use them for visual reference; the source of truth is `design_references/Home.html` — open it in a browser to see the full page, hover states, and animations live.
+
+> Note: the light-mode screenshots in this bundle predate the 2026-05-29 palette revision and show the original warm-white/sand surfaces. The current live light mode uses the cream + sage palette documented in **Colors — Light**.
 
 ---
 

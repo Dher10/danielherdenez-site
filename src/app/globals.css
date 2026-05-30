@@ -89,10 +89,10 @@ html, body {
 }
 
 [data-theme="light"] {
-  --bg-0: #FAFAF7;
-  --bg-1: #FFFFFF;
-  --bg-2: #F4F2EC;
-  --bg-3: #ECE9E2;
+  --bg-0: #F7F3EC;
+  --bg-1: #FBF8F3;
+  --bg-2: #EDF2F0;
+  --bg-3: #E2EDE8;
   --fg-0: #1A1A1C;
   --fg-1: #3F3E3A;
   --fg-2: #6F6E68;
@@ -568,6 +568,17 @@ html, body {
   }
   .artifact .a-foot {
     margin-top: auto;
+  }
+
+  [data-theme="light"] .case,
+  [data-theme="light"] .artifact {
+    border-color: #DDE7E2;
+    box-shadow: 0 1px 3px rgba(74, 107, 95, 0.06);
+  }
+
+  [data-theme="light"] .case:hover,
+  [data-theme="light"] .artifact:hover {
+    border-color: #CFE0D8;
   }
 
   /* ============================================================

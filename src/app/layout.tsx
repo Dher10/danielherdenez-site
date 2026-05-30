@@ -33,12 +33,13 @@ export const metadata: Metadata = {
   description: 'Product Manager building AI-native workflow platforms.',
 };
 
-const themeScript = `(function(){try{var s=localStorage.getItem('dh-theme');var p=window.matchMedia('(prefers-color-scheme:light)').matches?'light':'dark';var t=s||p;if(t==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}})()`;
+const themeScript = `(function(){try{var s=localStorage.getItem('dh-theme');if(s==='light'){document.documentElement.setAttribute('data-theme','light')}}catch(e){}})()`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
     >
       <head>
