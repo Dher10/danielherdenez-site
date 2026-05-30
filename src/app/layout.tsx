@@ -30,11 +30,13 @@ const instrumentSerif = localFont({
 });
 
 export const metadata: Metadata = {
-  title: 'Daniel Herdenez — Product Manager',
-  description: 'Product Manager building AI-native workflow platforms. Currently at MindTechSourcing.',
+  title: 'Daniel Herdenez — Product Manager · AI & SaaS',
+  description:
+    'Product Manager building AI-native workflow platforms and SaaS products. Currently at MindTechSourcing, shipping tools that make teams faster.',
   openGraph: {
-    title: 'Daniel Herdenez — Product Manager',
-    description: 'Product Manager building AI-native workflow platforms. Currently at MindTechSourcing.',
+    title: 'Daniel Herdenez — Product Manager · AI & SaaS',
+    description:
+      'Product Manager building AI-native workflow platforms and SaaS products. Currently at MindTechSourcing, shipping tools that make teams faster.',
     url: 'https://danielherdenez.com',
     siteName: 'Daniel Herdenez',
     images: [
@@ -50,8 +52,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Daniel Herdenez — Product Manager',
-    description: 'Product Manager building AI-native workflow platforms. Currently at MindTechSourcing.',
+    title: 'Daniel Herdenez — Product Manager · AI & SaaS',
+    description:
+      'Product Manager building AI-native workflow platforms and SaaS products. Currently at MindTechSourcing, shipping tools that make teams faster.',
     images: ['https://danielherdenez.com/og-image.png'],
   },
 };
