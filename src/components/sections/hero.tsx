@@ -20,14 +20,14 @@ export default function Hero() {
             Let&apos;s talk <span className="arrow">→</span>
           </a>
           <a
-            href="https://www.linkedin.com"
+            href="https://www.linkedin.com/in/daniel-herdenez-5160161a9"
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-ghost"
           >
             LinkedIn <span className="arrow up-right">↗</span></a>
           <a
-            href="https://github.com"
+            href="https://github.com/Dher10"
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-ghost"

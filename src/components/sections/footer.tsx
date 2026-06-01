@@ -29,7 +29,7 @@ export default function Footer() {
             </a>
             <a
               className="social-link"
-              href="https://www.linkedin.com"
+              href="https://www.linkedin.com/in/daniel-herdenez-5160161a9"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="LinkedIn"
@@ -49,7 +49,7 @@ export default function Footer() {
             </a>
             <a
               className="social-link"
-              href="https://github.com"
+              href="https://github.com/Dher10"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="GitHub"
