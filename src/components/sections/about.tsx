@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Reveal from '@/components/shared/reveal';
 import SectionHead from '@/components/shared/section-head';
 
@@ -14,9 +15,9 @@ export default function About() {
               products that do the same thing for other teams. Now I run product at{' '}
               <strong>MindTechSourcing</strong>, shipping workflow platforms with native AI.
             </p>
-            <a href="#" className="ghost-link">
+            <Link href="/about" className="ghost-link">
               More about me <span className="arrow">→</span>
-            </a>
+            </Link>
           </div>
         </Reveal>
       </div>

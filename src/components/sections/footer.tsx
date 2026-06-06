@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import Monogram from '@/components/shared/monogram';
 
 export default function Footer() {
@@ -9,9 +10,9 @@ export default function Footer() {
             <Monogram className="foot-mark" />
           </div>
           <nav className="foot-center" aria-label="Footer">
-            <a href="#work">Work</a>
-            <a href="#about">About</a>
-            <a href="#writing">Writing &amp; Artifacts</a>
+            <Link href="/#work">Work</Link>
+            <Link href="/about">About</Link>
+            <Link href="/#writing">Writing &amp; Artifacts</Link>
           </nav>
           <div className="foot-socials">
             <a className="social-link" href="mailto:hello@danielherdenez.com" aria-label="Email">

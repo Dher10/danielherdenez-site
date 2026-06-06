@@ -1,18 +1,22 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import Monogram from '@/components/shared/monogram';
 import ThemeToggle from '@/components/shared/theme-toggle';
 
 export default function Nav() {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const displayActiveSection = pathname === '/about' ? 'about' : activeSection;
 
   const navLinks = [
-    { href: '#work', label: 'Work', id: 'work' },
-    { href: '#about', label: 'About', id: 'about' },
-    { href: '#writing', label: 'Writing & Artifacts', id: 'writing' },
+    { href: '/#work', label: 'Work', id: 'work' },
+    { href: '/about', label: 'About', id: 'about' },
+    { href: '/#writing', label: 'Writing & Artifacts', id: 'writing' },
   ];
 
   useEffect(() => {
@@ -23,6 +27,8 @@ export default function Nav() {
   }, []);
 
   useEffect(() => {
+    if (pathname !== '/') return;
+
     const ids = ['work', 'about', 'writing'];
     const io = new IntersectionObserver(
       (entries) => {
@@ -37,7 +43,7 @@ export default function Nav() {
       if (el) io.observe(el);
     });
     return () => io.disconnect();
-  }, []);
+  }, [pathname]);
 
   return (
     <header className={`nav${scrolled ? ' scrolled' : ''}`} id="nav">
@@ -45,13 +51,13 @@ export default function Nav() {
         <Monogram />
         <nav className="nav-links" aria-label="Primary">
           {navLinks.map((link) => (
-            <a
+            <Link
               key={link.id}
               href={link.href}
-              className={activeSection === link.id ? 'active' : ''}
+              className={displayActiveSection === link.id ? 'active' : ''}
             >
               {link.label}
-            </a>
+            </Link>
           ))}
         </nav>
         <div className="nav-actions">
@@ -74,9 +80,14 @@ export default function Nav() {
         aria-label="Mobile primary"
       >
         {navLinks.map((link) => (
-          <a key={link.id} href={link.href} onClick={() => setMenuOpen(false)}>
+          <Link
+            key={link.id}
+            href={link.href}
+            className={displayActiveSection === link.id ? 'active' : ''}
+            onClick={() => setMenuOpen(false)}
+          >
             {link.label}
-          </a>
+          </Link>
         ))}
       </nav>
     </header>
