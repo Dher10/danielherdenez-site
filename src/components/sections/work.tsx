@@ -45,7 +45,7 @@ export default function Work() {
   const shouldReduce = useReducedMotion();
 
   return (
-    <section id="work" className="work" data-screen-label="02 Work">
+    <section id="work" className="work">
       <div className="container">
         <SectionHead index="01 — Work" heading="What I'm building right now." />
         <motion.div
