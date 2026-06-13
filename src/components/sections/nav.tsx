@@ -11,10 +11,14 @@ export default function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
-  const displayActiveSection = pathname === '/about' ? 'about' : activeSection;
+  const displayActiveSection = pathname.startsWith('/work')
+    ? 'work'
+    : pathname === '/about'
+      ? 'about'
+      : activeSection;
 
   const navLinks = [
-    { href: '/#work', label: 'Work', id: 'work' },
+    { href: '/work', label: 'Work', id: 'work' },
     { href: '/about', label: 'About', id: 'about' },
     { href: '/#writing', label: 'Writing & Artifacts', id: 'writing' },
   ];

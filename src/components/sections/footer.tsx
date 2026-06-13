@@ -10,7 +10,7 @@ export default function Footer() {
             <Monogram className="foot-mark" />
           </div>
           <nav className="foot-center" aria-label="Footer">
-            <Link href="/#work">Work</Link>
+            <Link href="/work">Work</Link>
             <Link href="/about">About</Link>
             <Link href="/#writing">Writing &amp; Artifacts</Link>
           </nav>
@@ -69,7 +69,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="foot-bottom">
-          © 2026 Daniel Herdenez · Built with Next.js · Deployed on Vercel
+          &copy; 2026 Daniel Herdenez &middot; Built with Next.js &middot; Deployed on Vercel
         </div>
       </div>
     </footer>

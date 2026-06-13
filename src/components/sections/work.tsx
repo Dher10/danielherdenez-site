@@ -1,29 +1,33 @@
 'use client';
-import { Fragment } from 'react';
+
 import { motion, useReducedMotion } from 'framer-motion';
+import CaseCard from '@/components/shared/case-card';
 import SectionHead from '@/components/shared/section-head';
 
 const cases = [
   {
-    meta: 'case · 01',
-    title: 'From workflow tool to AI agent platform',
-    desc: 'Leading the product evolution from a workflow management SaaS into the foundation for AI agent orchestration. Defining roadmap, metrics, and GTM.',
-    tags: ['Product strategy', 'AI agents', 'Since 2025'],
+    meta: 'case \u00b7 01',
+    title: 'From workflow software to AI-assisted operations',
+    desc: 'How a case platform built on real operations work grew into one that puts AI inside the workflow, on purpose and under control.',
+    tags: ['Product strategy', 'AI-assisted', 'Since 2025'],
     cta: 'read',
+    href: '/work/veflo-trace',
   },
   {
-    meta: 'case · 02',
+    meta: 'case \u00b7 02',
     title: 'Designing governance for a multi-product platform',
     desc: 'Shaping the admin layer for a SaaS suite where multiple products share users, billing, and access. Evolving the early mockup into a coherent model for organization-level configuration and cross-product interactions that reduce friction across tools.',
     tags: ['Platform', 'Governance', 'Since 2026'],
     cta: 'read',
+    href: '#',
   },
   {
-    meta: 'case · 03',
+    meta: 'case \u00b7 03',
     title: 'How I use AI to do product work',
     desc: 'A public library documenting the prompts, workflows, and frameworks I use to do PM work faster and better. Built in production, not theory.',
     tags: ['Open source', 'GitHub', 'Since 2026'],
     cta: 'view',
+    href: '#',
   },
 ];
 
@@ -52,29 +56,16 @@ export default function Work() {
           viewport={{ once: true, margin: '0px 0px -10% 0px' }}
         >
           {cases.map((c, i) => (
-            <motion.a
+            <CaseCard
               key={i}
-              href="#"
-              className="case"
+              href={c.href}
+              meta={c.meta}
+              title={c.title}
+              desc={c.desc}
+              tags={c.tags}
+              cta={c.cta}
               variants={shouldReduce ? undefined : cardVariants}
-            >
-              <div className="case-meta">{c.meta}</div>
-              <h3>{c.title}</h3>
-              <p className="desc">{c.desc}</p>
-              <div className="case-foot">
-                <div className="tags">
-                  {c.tags.map((tag, ti) => (
-                    <Fragment key={ti}>
-                      <span>{tag}</span>
-                      {ti < c.tags.length - 1 && <span className="sep">·</span>}
-                    </Fragment>
-                  ))}
-                </div>
-                <span className="read">
-                  {c.cta} <span className="arrow">→</span>
-                </span>
-              </div>
-            </motion.a>
+            />
           ))}
         </motion.div>
       </div>
