@@ -177,11 +177,11 @@ export default function VefloTracePage() {
             <div className="work-grid">
               {/* TODO: Replace placeholder hrefs when the remaining case study routes exist. */}
               <CaseCard
-                href="#"
-                meta="Platform governance &middot; Since 2026"
-                title="Designing governance for a multi-product platform"
-                desc="Shaping the admin layer for a SaaS suite where multiple products share users, billing, and access. Evolving the early mockup into a coherent model for organization-level configuration and cross-product interactions that reduce friction across tools."
-                tags={['Platform', 'Governance', 'Since 2026']}
+                href="/work/internal-platform"
+                meta="Internal platform &middot; Since 2026"
+                title="Designing product work beside an agentic build system"
+                desc="What it takes to be product manager of an internal platform built by a fast-moving agentic system, and how product work keeps pace without becoming the bottleneck."
+                tags={['Platform', 'AI-assisted', 'Since 2026']}
                 cta="read"
               />
               <CaseCard

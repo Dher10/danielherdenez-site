@@ -21,12 +21,12 @@ const cases = [
     href: '/work/veflo-trace',
   },
   {
-    meta: 'case \u00b7 02',
-    title: 'Designing governance for a multi-product platform',
-    desc: 'Shaping the admin layer for a SaaS suite where multiple products share users, billing, and access. Evolving the early mockup into a coherent model for organization-level configuration and cross-product interactions that reduce friction across tools.',
-    tags: ['Coming soon', 'Platform', 'Governance', 'Since 2026'],
+    meta: 'Internal platform \u00b7 Since 2026',
+    title: 'Designing product work beside an agentic build system',
+    desc: 'What it takes to be product manager of an internal platform built by a fast-moving agentic system, and how product work keeps pace without becoming the bottleneck.',
+    tags: ['Platform', 'AI-assisted', 'Since 2026'],
     cta: 'read',
-    href: '#',
+    href: '/work/internal-platform',
   },
   {
     meta: 'case \u00b7 03',
