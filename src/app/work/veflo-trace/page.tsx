@@ -112,13 +112,13 @@ export default function VefloTracePage() {
                 </span>
                 <div className="about-prose">
                   <p>
-                    The same restraint shaped the technical foundation. Jeffrey Liker&apos;s reading
-                    of Toyota puts it plainly: technology should be reliable, tested, and useful to
-                    the people and processes it serves. For Trace, that meant treating data
-                    structure as product infrastructure, not as implementation detail. Traceability
-                    depends on clean data, so the data layer came before broad connectivity. The
-                    creation API was scoped later as a controlled way to bring cases from public
-                    forms and client applications into the managed flow.
+                    The same restraint shaped the technical foundation. It follows Principle 8 of
+                    Jeffrey Liker&apos;s The Toyota Way: use only reliable, thoroughly tested
+                    technology that serves your people and your processes. For Trace, that meant
+                    treating data structure as product infrastructure, not as implementation
+                    detail. Traceability depends on clean data, so the data layer came before broad
+                    connectivity. The creation API was scoped later as a controlled way to bring
+                    cases from public forms and client applications into the managed flow.
                   </p>
                 </div>
               </div>

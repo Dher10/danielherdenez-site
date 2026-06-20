@@ -3,7 +3,7 @@ import Eyebrow from '@/components/shared/eyebrow';
 
 export default function Hero() {
   return (
-    <section className="hero" data-screen-label="01 Hero">
+    <section className="hero">
       <HeroMesh />
       <div className="container hero-inner">
         <Eyebrow>available · summer 2026</Eyebrow>
@@ -12,8 +12,7 @@ export default function Hero() {
           <span className="em">shipped products</span>.
         </h1>
         <p className="sub">
-          Currently at MindTechSourcing, building the foundation for AI agents on a
-          traceability and workflow SaaS.
+          Currently at MindTechSourcing, building AI-native workflow and traceability software.
         </p>
         <div className="hero-cta">
           <a href="#contact" className="btn btn-primary">

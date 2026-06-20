@@ -3,7 +3,7 @@ import SectionHead from '@/components/shared/section-head';
 
 export default function Writing() {
   return (
-    <section id="writing" className="writing" data-screen-label="04 Writing">
+    <section id="writing" className="writing">
       <div className="container">
         <Reveal>
           <SectionHead
@@ -12,7 +12,7 @@ export default function Writing() {
           />
           <div className="writing-grid">
             <a
-              href="https://github.com"
+              href="https://github.com/Dher10/PM-AI-Prompts"
               target="_blank"
               rel="noopener noreferrer"
               className="artifact"
@@ -20,8 +20,8 @@ export default function Writing() {
               <div className="a-meta">repository · github</div>
               <h3>PM-AI-Prompts</h3>
               <p>
-                A public library documenting prompts, workflows, and frameworks for
-                AI-assisted product management.
+                An open, in-progress library of prompts and workflows for AI-assisted product
+                management.
               </p>
               <div className="a-foot">
                 <span className="ghost-link">

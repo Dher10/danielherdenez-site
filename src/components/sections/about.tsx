@@ -4,7 +4,7 @@ import SectionHead from '@/components/shared/section-head';
 
 export default function About() {
   return (
-    <section id="about" className="about" data-screen-label="03 About">
+    <section id="about" className="about">
       <div className="container">
         <Reveal>
           <SectionHead index="— About" heading="How I got here." />
