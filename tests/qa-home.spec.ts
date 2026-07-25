@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const URL = 'https://danielherdenez-site.vercel.app';
+const URL = '/';
 
 // --- Color helpers (run in Node test context, not browser) ---
 function parseRgb(str: string): { r: number; g: number; b: number } | null {
@@ -37,8 +37,7 @@ test.describe('Section 1 — Nav', () => {
     await page.goto(URL);
     const nav = page.locator('.nav').first();
     await expect(nav).toBeVisible();
-    const position = await nav.evaluate(el => getComputedStyle(el).position);
-    expect(position).toBe('sticky');
+    await expect(nav).toHaveCSS('position', 'sticky');
   });
 
   test('monogram "d" is visible', async ({ page }) => {
@@ -155,12 +154,12 @@ test.describe('Section 4 — Work', () => {
     await expect(page.locator('.case')).toHaveCount(3);
   });
 
-  test('card 1 title contains "workflow tool"', async ({ page }) => {
-    await expect(page.locator('.case').nth(0).locator('h3')).toContainText('workflow tool');
+  test('card 1 title contains "workflow software"', async ({ page }) => {
+    await expect(page.locator('.case').nth(0).locator('h3')).toContainText('workflow software');
   });
 
-  test('card 2 title contains "governance"', async ({ page }) => {
-    await expect(page.locator('.case').nth(1).locator('h3')).toContainText('governance');
+  test('card 2 title contains "agentic build system"', async ({ page }) => {
+    await expect(page.locator('.case').nth(1).locator('h3')).toContainText('agentic build system');
   });
 
   test('card 3 title contains "AI to do product work"', async ({ page }) => {
@@ -223,8 +222,8 @@ test.describe('Section 6 — Writing', () => {
     await expect(page.locator('#writing')).toBeAttached();
   });
 
-  test('"PM-AI-Prompts" card is visible', async ({ page }) => {
-    await expect(page.locator('#writing').getByText('PM-AI-Prompts')).toBeVisible();
+  test('"pm-ai-playbook" card is visible', async ({ page }) => {
+    await expect(page.locator('#writing').getByText('pm-ai-playbook')).toBeVisible();
   });
 
   test('"Essays coming soon" card is visible', async ({ page }) => {
@@ -245,7 +244,7 @@ test.describe('Section 7 — Footer', () => {
   });
 
   test('footer exists with monogram "d"', async ({ page }) => {
-    const footer = page.locator('footer');
+    const footer = page.locator('footer#contact');
     await expect(footer).toBeVisible();
     await expect(footer.locator('.foot-mark')).toContainText('d');
   });
