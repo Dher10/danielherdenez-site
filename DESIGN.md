@@ -217,7 +217,7 @@ There is **no other logo lockup or icon**. Do not generate one.
 - **Grid**: 2 equal columns desktop, 1 column mobile, gap `var(--space-4)`.
 - **Artifact cards**: Same styling as work cards (bg-2, hairline border, radius-lg, padding `var(--space-10)`, min-height 240px, same hover behavior). The same light-mode border/shadow override applies (see **Colors — Light**).
 - **Cards**:
-  1. Meta `repository · github` → "PM-AI-Prompts" → "A public library documenting prompts, workflows, and frameworks for AI-assisted product management." → "View on GitHub ↗"
+  1. Meta `repository · github` → "pm-ai-playbook" → "A public library documenting prompts, workflows, and frameworks for AI-assisted product management." → "View on GitHub ↗"
   2. Meta `essays · coming soon` → "Essays coming soon" → "Notes on AI product management, operations discipline, and how to ship software that earns trust." → "Reach out →"
 
 ### 6. Footer

@@ -152,8 +152,8 @@ export default function AboutPage() {
               <p>
                 Away from the job, I&apos;ve been doing it since I was a kid assembling PCs, and
                 I do it in public now. This site is mine, code and all, built with Claude and
-                Codex. So is PM-AI-Prompts, an open library of the prompts and workflows I
-                actually use for product work, which I started early in 2026. I share it because
+                Codex. So is pm-ai-playbook, an open, in-progress library of the prompts and
+                workflows I use for product work, which I started early in 2026. I share it because
                 what I figure out is more useful to other people than it is sitting on my drive.
               </p>
               <p>

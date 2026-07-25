@@ -12,13 +12,13 @@ export default function Writing() {
           />
           <div className="writing-grid">
             <a
-              href="https://github.com/Dher10/PM-AI-Prompts"
+              href="https://github.com/Dher10/pm-ai-playbook"
               target="_blank"
               rel="noopener noreferrer"
               className="artifact"
             >
               <div className="a-meta">repository · github</div>
-              <h3>PM-AI-Prompts</h3>
+              <h3>pm-ai-playbook</h3>
               <p>
                 An open, in-progress library of prompts and workflows for AI-assisted product
                 management.
