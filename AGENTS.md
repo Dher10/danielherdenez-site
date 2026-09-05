@@ -17,8 +17,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `src/app/` — rutas (App Router). Existentes: `about/`, `work/`
 - `src/components/sections/` — secciones de página completas
 - `src/components/shared/` — componentes compartidos entre secciones
-- `src/components/ui/` — primitivos de shadcn
-- `src/lib/` — utilidades
+- `src/lib/` — utilidades y datos compartidos (`cases.ts` es la fuente única de los case studies)
 - `tests/` — specs de Playwright (test automatizado — ver distinción abajo)
 
 ## Comandos

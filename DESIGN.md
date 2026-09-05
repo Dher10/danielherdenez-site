@@ -33,6 +33,23 @@ When recreating in Next.js, match values exactly. Where the prototype uses CSS v
 
 ---
 
+## Known Deviations
+
+The shipped site has moved away from this spec in four places. They are recorded here rather than rewritten in place, so the sections below still read as what was originally approved.
+
+| # | This spec says | Shipped today | Origin |
+|---|---|---|---|
+| 1 | Stack is Next.js 15 | Next.js 16.2.6 | Pre-existing |
+| 2 | Monogram links to `#top` | Links to `/`. The `#top` anchor was removed when the pages gained a `<main>` landmark | Pre-existing |
+| 3 | Work grid card 3 is `col-start-3 col-span-8` | `grid-column: 4 / span 6` | Pre-existing |
+| 4 | Reduced motion clamps every animation and transition to `0.001ms` through a global rule in `globals.css` | A scoped block disables the hero mesh drift, smooth scrolling and the hover lifts, and leaves colour transitions alone. Framer Motion is covered by `MotionConfig reducedMotion="user"` in the root layout instead of per-component `useReducedMotion()` | Changed 2026-09-05 |
+
+Deviation 4 needs context: the `0.001ms` rule was never actually implemented. The accessibility pass on 2026-09-05 found no `prefers-reduced-motion` CSS at all and added the scoped version, which keeps hover and focus feedback readable instead of freezing colour changes along with movement.
+
+Card copy in **Section 01 — Work** and the hero sub copy have also drifted as the content evolved. `src/lib/cases.ts` is the source of truth for case copy; the tables below are the original handoff text.
+
+---
+
 ## Stack & Hosting
 
 | | |
@@ -304,7 +321,7 @@ The complete source of truth is `tokens/colors_and_type.css` in this bundle. Hig
 | `--fg-0` | `#F5F4F0` | Primary text (warm off-white) |
 | `--fg-1` | `#C9C7C0` | Secondary text |
 | `--fg-2` | `#8F8D86` | Tertiary / meta |
-| `--fg-3` | `#5C5B56` | Disabled / placeholder |
+| `--fg-3` | `#7D7C77` | Disabled / placeholder |
 | `--hairline` | `rgba(245, 244, 240, 0.08)` | Dividers, borders |
 | `--hairline-strong` | `rgba(245, 244, 240, 0.14)` | Hover borders |
 | `--accent-fg` | `#7B9F92` | Sage accent text/link |
@@ -312,6 +329,8 @@ The complete source of truth is `tokens/colors_and_type.css` in this bundle. Hig
 | `--accent-ink` | `#0E0E0F` | Text on accent fill |
 | `--accent-soft` | `rgba(123, 159, 146, 0.12)` | Soft sage tint |
 | `--accent-hover` | `#8FB0A4` | Accent hover state |
+
+> **Updated 2026-09-05.** `--fg-3` was raised from `#5C5B56` to `#7D7C77`. At the original value it scored 2.84:1 against `--bg-0`, below the 4.5:1 this document requires for body text. It is used by `.foot-bottom` and by the middot separators in card tags.
 
 ### Colors — Light
 
@@ -325,8 +344,8 @@ The complete source of truth is `tokens/colors_and_type.css` in this bundle. Hig
 | `--bg-3` | `#E2EDE8` | Card hover (deeper sage tint) |
 | `--fg-0` | `#1A1A1C` | Primary text |
 | `--fg-1` | `#3F3E3A` | Secondary text |
-| `--fg-2` | `#6F6E68` | Tertiary / meta |
-| `--fg-3` | `#A3A199` | Disabled / placeholder |
+| `--fg-2` | `#62615B` | Tertiary / meta |
+| `--fg-3` | `#706E66` | Disabled / placeholder |
 | `--hairline` | `rgba(26, 26, 28, 0.08)` | Dividers, borders (nav, hero, proof, sections) |
 | `--hairline-strong` | `rgba(26, 26, 28, 0.14)` | Hover borders (non-card) |
 | `--accent-fg` | `#4A6B5F` | Sage accent text/link |
@@ -334,6 +353,8 @@ The complete source of truth is `tokens/colors_and_type.css` in this bundle. Hig
 | `--accent-ink` | `#FAFAF7` | Text on accent fill |
 | `--accent-soft` | `rgba(74, 107, 95, 0.10)` | Soft sage tint |
 | `--accent-hover` | `#3E5A50` | Accent hover state |
+
+> **Updated 2026-09-05.** `--fg-3` was darkened from `#A3A199` to `#706E66` (it scored 2.34:1 against `--bg-0`), and `--fg-2` from `#6F6E68` to `#62615B` so the text ramp stays ordered once `--fg-3` moved up. Both now clear 4.5:1 on `--bg-0` and on the card surfaces.
 
 **Light-mode card treatment (cards only).** Work cards (`.case`) and artifact cards (`.artifact`) override the default hairline border in light mode and add a soft shadow. Dark mode is unchanged.
 
@@ -417,6 +438,7 @@ Type scale (rem-based on 16px root):
 ```
 --container-prose:   48rem  (max-w-3xl)  /* body prose */
 --container-default: 72rem  (max-w-6xl)  /* page max width */
+--nav-height:        68px                 /* sticky nav; anchors offset by this */
 ```
 
 ---
