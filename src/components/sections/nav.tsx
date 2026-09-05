@@ -15,7 +15,7 @@ export default function Nav() {
     ? 'work'
     : pathname === '/about'
       ? 'about'
-      : activeSection;
+      : pathname === '/' ? activeSection : '';
 
   const navLinks = [
     { href: '/work', label: 'Work', id: 'work' },
@@ -34,11 +34,15 @@ export default function Nav() {
     if (pathname !== '/') return;
 
     const ids = ['work', 'about', 'writing'];
+    const intersecting = new Set<string>();
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting) setActiveSection(e.target.id);
+          if (e.isIntersecting) intersecting.add(e.target.id);
+          else intersecting.delete(e.target.id);
         });
+        // Observer entries contain only changes; retain the other intersections.
+        setActiveSection([...ids].reverse().find((id) => intersecting.has(id)) ?? '');
       },
       { rootMargin: '-45% 0px -45% 0px' }
     );
@@ -59,6 +63,9 @@ export default function Nav() {
               key={link.id}
               href={link.href}
               className={displayActiveSection === link.id ? 'active' : ''}
+              aria-current={displayActiveSection === link.id
+                ? pathname === link.href ? 'page' : 'location'
+                : undefined}
             >
               {link.label}
             </Link>
@@ -88,6 +95,9 @@ export default function Nav() {
             key={link.id}
             href={link.href}
             className={displayActiveSection === link.id ? 'active' : ''}
+            aria-current={displayActiveSection === link.id
+              ? pathname === link.href ? 'page' : 'location'
+              : undefined}
             onClick={() => setMenuOpen(false)}
           >
             {link.label}

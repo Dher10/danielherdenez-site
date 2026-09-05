@@ -6,12 +6,14 @@ import CaseCard from '@/components/shared/case-card';
 import Eyebrow from '@/components/shared/eyebrow';
 import Reveal from '@/components/shared/reveal';
 import { pmAiPlaybook, vefloTrace } from '@/lib/cases';
+import { createPageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
+  path: '/work/internal-platform',
   title: 'Designing product work beside an agentic build system \u2014 Daniel Herdenez',
   description:
     'A case study on product management for an internal platform built beside an agentic engineering system.',
-};
+});
 
 export default function InternalPlatformPage() {
   return (
@@ -126,7 +128,7 @@ export default function InternalPlatformPage() {
           <div className="container">
             <Reveal>
               <div className="prose-narrow">
-                <Eyebrow>More work</Eyebrow>
+                <Eyebrow as="h2">More work</Eyebrow>
               </div>
             </Reveal>
 

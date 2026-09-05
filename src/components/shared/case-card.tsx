@@ -1,7 +1,10 @@
 'use client';
 
 import { Fragment } from 'react';
+import Link from 'next/link';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
+
+const MotionLink = motion.create(Link);
 
 export interface CaseCardProps {
   meta: string;
@@ -14,6 +17,7 @@ export interface CaseCardProps {
   cta?: string;
   /** Short status chip, e.g. "Coming soon". */
   badge?: string;
+  headingLevel?: 2 | 3;
   variants?: Variants;
 }
 
@@ -25,9 +29,11 @@ export default function CaseCard({
   cta,
   href,
   badge,
+  headingLevel = 3,
   variants,
 }: CaseCardProps) {
   const shouldReduce = useReducedMotion();
+  const Heading = headingLevel === 2 ? 'h2' : 'h3';
 
   const body = (
     <>
@@ -35,7 +41,7 @@ export default function CaseCard({
         <div className="case-meta">{meta}</div>
         {badge && <span className="case-badge">{badge}</span>}
       </div>
-      <h3>{title}</h3>
+      <Heading>{title}</Heading>
       <p className="desc">{desc}</p>
       <div className="case-foot">
         <div className="tags">
@@ -68,7 +74,7 @@ export default function CaseCard({
   }
 
   return (
-    <motion.a
+    <MotionLink
       href={href}
       className="case"
       variants={variants}
@@ -88,6 +94,6 @@ export default function CaseCard({
       }
     >
       {body}
-    </motion.a>
+    </MotionLink>
   );
 }

@@ -506,6 +506,7 @@ html, body {
     background: var(--bg-2);
     border-color: var(--hairline);
   }
+  .case h2,
   .case h3 {
     margin: 0;
     font-family: var(--font-serif);
@@ -773,7 +774,8 @@ html, body {
     transition: color var(--dur-fast) var(--ease-out);
   }
 
-  .mobile-nav-menu a:hover {
+  .mobile-nav-menu a:hover,
+  .mobile-nav-menu a.active {
     color: var(--fg-0);
   }
 }

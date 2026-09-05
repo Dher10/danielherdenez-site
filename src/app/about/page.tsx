@@ -4,12 +4,14 @@ import Nav from '@/components/sections/nav';
 import Footer from '@/components/sections/footer';
 import Eyebrow from '@/components/shared/eyebrow';
 import Reveal from '@/components/shared/reveal';
+import { createPageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
+  path: '/about',
   title: 'About \u2014 Daniel Herdenez',
   description:
     'How I got here: from process improvement and consulting to building AI-native workflow products. Product Manager at MindTechSourcing.',
-};
+});
 
 export default function AboutPage() {
   return (
@@ -54,10 +56,10 @@ export default function AboutPage() {
             <Reveal>
               <div className="journey">
                 <div className="stage">
-                  <span className="stage-label">
+                  <h2 className="stage-label">
                     <span className="stage-dot" aria-hidden="true"></span>
                     Manufacturing
-                  </span>
+                  </h2>
                   <div className="about-prose">
                     <p>
                       None of this started with software. My career started on the floor of a
@@ -73,10 +75,10 @@ export default function AboutPage() {
                   </div>
                 </div>
                 <div className="stage">
-                  <span className="stage-label">
+                  <h2 className="stage-label">
                     <span className="stage-dot" aria-hidden="true"></span>
                     Consulting
-                  </span>
+                  </h2>
                   <div className="about-prose">
                     <p>
                       Consulting came next, and the view widened. Instead of one plant I worked
@@ -90,10 +92,10 @@ export default function AboutPage() {
                   </div>
                 </div>
                 <div className="stage">
-                  <span className="stage-label">
+                  <h2 className="stage-label">
                     <span className="stage-dot" aria-hidden="true"></span>
                     Software
-                  </span>
+                  </h2>
                   <div className="about-prose">
                     <p>
                       Software came after that, and it came quickly. I moved into a faster
@@ -117,10 +119,10 @@ export default function AboutPage() {
                   </div>
                 </div>
                 <div className="stage">
-                  <span className="stage-label">
+                  <h2 className="stage-label">
                     <span className="stage-dot" aria-hidden="true"></span>
                     Now
-                  </span>
+                  </h2>
                   <div className="about-prose">
                     <p>
                       For years I shaped these systems from the operations side, defining what the

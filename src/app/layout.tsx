@@ -3,6 +3,7 @@ import localFont from 'next/font/local';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import MotionProvider from '@/components/shared/motion-provider';
+import { createPageMetadata } from '@/lib/metadata';
 import './globals.css';
 
 const geistSans = localFont({
@@ -31,35 +32,12 @@ const instrumentSerif = localFont({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
+  path: '/',
   title: 'Daniel Herdenez — Product Manager · AI & SaaS',
   description:
     'Product Manager building AI-native workflow platforms and SaaS products. Currently at MindTechSourcing, shipping tools that make teams faster.',
-  openGraph: {
-    title: 'Daniel Herdenez — Product Manager · AI & SaaS',
-    description:
-      'Product Manager building AI-native workflow platforms and SaaS products. Currently at MindTechSourcing, shipping tools that make teams faster.',
-    url: 'https://danielherdenez.com',
-    siteName: 'Daniel Herdenez',
-    images: [
-      {
-        url: 'https://danielherdenez.com/og-image.png',
-        width: 1200,
-        height: 630,
-        alt: 'Daniel Herdenez — Product Manager',
-      },
-    ],
-    locale: 'en_US',
-    type: 'website',
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Daniel Herdenez — Product Manager · AI & SaaS',
-    description:
-      'Product Manager building AI-native workflow platforms and SaaS products. Currently at MindTechSourcing, shipping tools that make teams faster.',
-    images: ['https://danielherdenez.com/og-image.png'],
-  },
-};
+});
 
 // Single value, not the `media: '(prefers-color-scheme: dark)'` form. Dark is the
 // universal default here regardless of OS preference (DESIGN.md, Conventions), so

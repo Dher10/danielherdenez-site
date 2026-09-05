@@ -37,7 +37,7 @@ Estos ya están permitidos sin confirmación en `.claude/settings.local.json`.
 
 ## Reglas de contenido (aplican a cualquier copy, bio o case study de este sitio)
 
-- Sin nombres de empleadores actuales ni nombres internos de producto — única excepción: MindTechSourcing.
+- Sin nombres de empleadores actuales ni nombres internos de producto — excepciones: MindTechSourcing y Veflo Trace (producto público).
 - Sin métricas, certificaciones, herramientas o empresas inventadas. Si un bullet necesita un número y no lo tengo, preguntar antes de agregarlo.
 - Voz: directa, verbos de acción, sin adjetivos vacíos ("apasionado", "proactivo", "rockstar" — prohibidos).
 - Antes de redactar cualquier texto en la voz de Daniel, consultar `Estilo_de_Escritura.md` (vive en el proyecto de Claude, no en este repo).

@@ -1,13 +1,14 @@
 interface EyebrowProps {
   children: React.ReactNode;
   dot?: boolean;
+  as?: 'div' | 'h2';
 }
 
-export default function Eyebrow({ children, dot = true }: EyebrowProps) {
+export default function Eyebrow({ children, dot = true, as: Tag = 'div' }: EyebrowProps) {
   return (
-    <div className="eyebrow">
+    <Tag className="eyebrow">
       {dot && <span className="dot" />}
       {children}
-    </div>
+    </Tag>
   );
 }

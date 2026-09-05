@@ -6,12 +6,14 @@ import CaseCard from '@/components/shared/case-card';
 import Eyebrow from '@/components/shared/eyebrow';
 import Reveal from '@/components/shared/reveal';
 import { internalPlatform, pmAiPlaybook } from '@/lib/cases';
+import { createPageMetadata } from '@/lib/metadata';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
+  path: '/work/veflo-trace',
   title: 'Veflo Trace \u2014 Daniel Herdenez',
   description:
     'A case study on building Veflo Trace from workflow software toward AI-assisted operations.',
-};
+});
 
 export default function VefloTracePage() {
   return (
@@ -88,10 +90,10 @@ export default function VefloTracePage() {
             <Reveal>
               <div className="journey" style={{ marginTop: 'var(--space-12)' }}>
                 <div className="stage">
-                  <span className="stage-label">
+                  <h2 className="stage-label">
                     <span className="stage-dot" aria-hidden="true"></span>
                     AI with restraint
-                  </span>
+                  </h2>
                   <div className="about-prose">
                     <p>
                       That last principle shaped the MVP. The AI scope stayed intentionally narrow:
@@ -104,10 +106,10 @@ export default function VefloTracePage() {
                   </div>
                 </div>
                 <div className="stage">
-                  <span className="stage-label">
+                  <h2 className="stage-label">
                     <span className="stage-dot" aria-hidden="true"></span>
                     Data before connections
-                  </span>
+                  </h2>
                   <div className="about-prose">
                     <p>
                       The same restraint shaped the technical foundation. It follows Principle 8 of
@@ -121,10 +123,10 @@ export default function VefloTracePage() {
                   </div>
                 </div>
                 <div className="stage">
-                  <span className="stage-label">
+                  <h2 className="stage-label">
                     <span className="stage-dot" aria-hidden="true"></span>
                     Ship to learn
-                  </span>
+                  </h2>
                   <div className="about-prose">
                     <p>
                       The hardest decision was not what else Trace could do. It was what had to wait.
@@ -167,7 +169,7 @@ export default function VefloTracePage() {
           <div className="container">
             <Reveal>
               <div className="prose-narrow">
-                <Eyebrow>More work</Eyebrow>
+                <Eyebrow as="h2">More work</Eyebrow>
               </div>
             </Reveal>
 
