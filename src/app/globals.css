@@ -75,6 +75,9 @@
   /* Containers */
   --container-default: 72rem;
 
+  /* Sticky nav height — anchors offset by this so targets clear the bar */
+  --nav-height: 68px;
+
   /* Fonts (referencing next/font variables) */
   color-scheme: dark;
 }
@@ -141,8 +144,13 @@ html, body {
   }
   .skip-link:focus { transform: translateY(0); }
 
-  /* Anchor targets clear the sticky nav (~66px) instead of hiding under it. */
-  :target { scroll-margin-top: var(--space-20); }
+  /* Anchor targets (#work, #about, #writing, #contact, #main) clear the sticky
+     nav instead of landing under it. */
+  section[id],
+  footer[id],
+  main[id] {
+    scroll-margin-top: calc(var(--nav-height) + var(--space-4));
+  }
 
   /* Containers per design system tokens */
   html .container {

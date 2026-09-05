@@ -312,3 +312,36 @@ test.describe('No dead links', () => {
   });
 });
 
+test.describe('Anchor offsets', () => {
+  // Every in-page anchor target must clear the sticky nav when jumped to.
+  //
+  // Note on coverage: only #work actually exercises scroll-margin-top today.
+  // #about, #writing and #contact sit close enough to the end of the document
+  // that the browser bottoms out before it can park them under the nav, so they
+  // pass with or without the rule. They stay here as guards for when the page
+  // grows and they stop being the last screenful.
+  for (const [hash, selector] of [
+    ['#work', '#work'],
+    ['#about', '#about'],
+    ['#writing', '#writing'],
+    ['#contact', '#contact'],
+  ] as const) {
+    test(`${hash} lands below the sticky nav`, async ({ page }) => {
+      await page.goto('/');
+      const navHeight = await page
+        .locator('.nav')
+        .evaluate((el) => el.getBoundingClientRect().height);
+
+      await page.goto(`/${hash}`);
+      await page.waitForTimeout(600);
+
+      const top = await page
+        .locator(selector)
+        .evaluate((el) => el.getBoundingClientRect().top);
+
+      expect(top, `${hash} top should sit at or below the nav (${navHeight}px)`).toBeGreaterThanOrEqual(
+        navHeight - 1,
+      );
+    });
+  }
+});
