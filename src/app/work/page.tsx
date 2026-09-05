@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Nav from '@/components/sections/nav';
 import Footer from '@/components/sections/footer';
-import CaseCard from '@/components/shared/case-card';
+import CaseCard, { type CaseCardProps } from '@/components/shared/case-card';
 import Eyebrow from '@/components/shared/eyebrow';
 import HeroMesh from '@/components/shared/hero-mesh';
 import Reveal from '@/components/shared/reveal';
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: 'A library of case studies and product work by Daniel Herdenez.',
 };
 
-const cases = [
+const cases: CaseCardProps[] = [
   {
     meta: 'case \u00b7 01',
     title: 'From workflow software to AI-assisted operations',
@@ -32,9 +32,8 @@ const cases = [
     meta: 'case \u00b7 03',
     title: 'How I use AI to do product work',
     desc: 'A public library documenting the prompts, workflows, and frameworks I use to do PM work faster and better. Built in production, not theory.',
-    tags: ['Coming soon', 'Open source', 'GitHub', 'Since 2026'],
-    cta: 'view',
-    href: '#',
+    tags: ['Open source', 'GitHub', 'Since 2026'],
+    badge: 'Coming soon',
   },
 ];
 
@@ -58,15 +57,7 @@ export default function WorkPage() {
             <Reveal>
               <div className="work-grid">
                 {cases.map((caseStudy) => (
-                  <CaseCard
-                    key={caseStudy.title}
-                    href={caseStudy.href}
-                    meta={caseStudy.meta}
-                    title={caseStudy.title}
-                    desc={caseStudy.desc}
-                    tags={caseStudy.tags}
-                    cta={caseStudy.cta}
-                  />
+                  <CaseCard key={caseStudy.title} {...caseStudy} />
                 ))}
               </div>
             </Reveal>

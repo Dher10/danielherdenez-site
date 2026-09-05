@@ -185,12 +185,11 @@ export default function VefloTracePage() {
                   cta="read"
                 />
                 <CaseCard
-                  href="#"
                   meta="Open source"
                   title="How I use AI to do product work"
                   desc="A public library documenting the prompts, workflows, and frameworks I use to do PM work faster and better. Built in production, not theory."
                   tags={['Open source', 'GitHub', 'Since 2026']}
-                  cta="view"
+                  badge="Coming soon"
                 />
               </div>
             </Reveal>

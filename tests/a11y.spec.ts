@@ -275,3 +275,40 @@ test.describe('Contrast', () => {
     }
   }
 });
+
+// ============================================================
+// Dead links & anchor offsets (P1)
+// ============================================================
+test.describe('No dead links', () => {
+  for (const route of ROUTES) {
+    test(`${route} has no href="#"`, async ({ page }) => {
+      await page.goto(route);
+      const dead = await page.locator('a[href="#"], a[href=""]').count();
+      expect(dead, `${route} should not link anywhere that goes nowhere`).toBe(0);
+    });
+  }
+
+  test('case 03 renders as a non-interactive card, not a link', async ({ page }) => {
+    await page.goto('/');
+    const inactive = page.locator('.case-inactive');
+    await expect(inactive).toHaveCount(1);
+    // It must not be an anchor, and must carry the status badge instead of a cta
+    expect(await inactive.evaluate((el) => el.tagName)).not.toBe('A');
+    await expect(inactive.locator('.case-badge')).toHaveText('Coming soon');
+    await expect(inactive.locator('.read')).toHaveCount(0);
+  });
+
+  test('the three work cards are still present on /work', async ({ page }) => {
+    await page.goto('/work');
+    await expect(page.locator('.case')).toHaveCount(3);
+    await expect(page.locator('.case-inactive')).toHaveCount(1);
+    await expect(page.locator('a.case')).toHaveCount(2);
+  });
+
+  test('internal-platform prose no longer links to a missing route', async ({ page }) => {
+    await page.goto('/work/internal-platform');
+    await expect(page.locator('main')).toContainText("I'm documenting that system separately.");
+    await expect(page.locator('main')).not.toContainText('its own case');
+  });
+});
+

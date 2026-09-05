@@ -1,10 +1,10 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import CaseCard from '@/components/shared/case-card';
+import CaseCard, { type CaseCardProps } from '@/components/shared/case-card';
 import SectionHead from '@/components/shared/section-head';
 
-const cases = [
+const cases: CaseCardProps[] = [
   {
     meta: 'case \u00b7 01',
     title: 'From workflow software to AI-assisted operations',
@@ -26,8 +26,7 @@ const cases = [
     title: 'How I use AI to do product work',
     desc: 'A public library documenting the prompts, workflows, and frameworks I use to do PM work faster and better. Built in production, not theory.',
     tags: ['Open source', 'GitHub', 'Since 2026'],
-    cta: 'view',
-    href: '#',
+    badge: 'Coming soon',
   },
 ];
 
@@ -55,17 +54,8 @@ export default function Work() {
           whileInView="show"
           viewport={{ once: true, margin: '0px 0px -10% 0px' }}
         >
-          {cases.map((c, i) => (
-            <CaseCard
-              key={i}
-              href={c.href}
-              meta={c.meta}
-              title={c.title}
-              desc={c.desc}
-              tags={c.tags}
-              cta={c.cta}
-              variants={cardVariants}
-            />
+          {cases.map((c) => (
+            <CaseCard key={c.title} {...c} variants={cardVariants} />
           ))}
         </motion.div>
       </div>

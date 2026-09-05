@@ -87,9 +87,8 @@ export default function InternalPlatformPage() {
                   That also changed how I worked as a product manager. I started using Claude to keep
                   planning, PRDs, roadmap structure, and user stories closer to the pace of the build.
                   What began as a way to keep up with one fast-moving product became a reusable
-                  product workflow, later standardized for product teams across the company. The full
-                  system belongs in {/* Case 3 route pending. */}
-                  <Link href="#">its own case</Link>.
+                  product workflow, later standardized for product teams across the company. I&apos;m
+                  documenting that system separately.
                 </p>
                 <p>
                   The same question is now showing up in UX/UI. A designer joined to shape the
@@ -143,12 +142,11 @@ export default function InternalPlatformPage() {
                   cta="read"
                 />
                 <CaseCard
-                  href="#"
                   meta="case &middot; 03"
                   title="How I use AI to do product work"
                   desc="A public library documenting the prompts, workflows, and frameworks I use to do PM work faster and better. Built in production, not theory."
-                  tags={['Coming soon', 'Open source', 'GitHub', 'Since 2026']}
-                  cta="view"
+                  tags={['Open source', 'GitHub', 'Since 2026']}
+                  badge="Coming soon"
                 />
               </div>
             </Reveal>

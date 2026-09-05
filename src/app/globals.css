@@ -473,11 +473,35 @@ html, body {
     background: var(--bg-3);
   }
 
+  .case-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
   .case .case-meta {
     font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
     font-size: var(--fs-12);
     color: var(--fg-2);
     letter-spacing: 0.08em;
+  }
+  .case-badge {
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
+    font-size: var(--fs-12);
+    color: var(--fg-2);
+    letter-spacing: 0.04em;
+    border: 1px solid var(--hairline-strong);
+    border-radius: var(--radius-full);
+    padding: 3px 10px;
+    white-space: nowrap;
+  }
+
+  /* Non-interactive card: no href, so nothing should read as clickable. */
+  .case-inactive { cursor: default; }
+  .case-inactive:hover {
+    transform: none;
+    background: var(--bg-2);
+    border-color: var(--hairline);
   }
   .case h3 {
     margin: 0;
@@ -618,6 +642,10 @@ html, body {
   [data-theme="light"] .case:hover,
   [data-theme="light"] .artifact:hover {
     border-color: #CFE0D8;
+  }
+
+  [data-theme="light"] .case-inactive:hover {
+    border-color: #DDE7E2;
   }
 
   /* ============================================================
