@@ -3,7 +3,6 @@ import Nav from '@/components/sections/nav';
 import Footer from '@/components/sections/footer';
 import CaseCard from '@/components/shared/case-card';
 import Eyebrow from '@/components/shared/eyebrow';
-import HeroMesh from '@/components/shared/hero-mesh';
 import Reveal from '@/components/shared/reveal';
 import { cases } from '@/lib/cases';
 
@@ -18,7 +17,6 @@ export default function WorkPage() {
       <Nav />
       <main id="main" tabIndex={-1}>
         <section className="page-hero">
-          <HeroMesh />
           <div className="container page-hero-inner">
             <div className="prose-narrow">
               <Eyebrow>Work</Eyebrow>

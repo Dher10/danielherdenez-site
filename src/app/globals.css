@@ -475,8 +475,9 @@ html, body {
                 border-color var(--dur-base) var(--ease-out);
   }
   @media (min-width: 768px) { .case { padding: var(--space-10); } }
+  /* The -2px lift lives in CaseCard's whileHover, not here: .case is a Framer
+     motion component and its inline transform overrides this rule. */
   .case:hover {
-    transform: translateY(-2px);
     border-color: var(--hairline-strong);
     background: var(--bg-3);
   }
@@ -504,10 +505,10 @@ html, body {
     white-space: nowrap;
   }
 
-  /* Non-interactive card: no href, so nothing should read as clickable. */
+  /* Non-interactive card: no href, so nothing should read as clickable.
+     It gets no whileHover either, so there is no lift to cancel here. */
   .case-inactive { cursor: default; }
   .case-inactive:hover {
-    transform: none;
     background: var(--bg-2);
     border-color: var(--hairline);
   }
@@ -965,10 +966,10 @@ html, body {
   .hero-mesh::before,
   .hero-mesh::after { animation: none; }
 
-  /* Hover lift on buttons and cards */
+  /* Hover lift on buttons and cards. .case is not listed: its lift is a Framer
+     whileHover, which MotionConfig reducedMotion="user" already drops. */
   .btn:hover,
   .btn:active,
-  .case:hover,
   .artifact:hover { transform: none; }
 
   /* Arrows that slide, and gaps that grow */

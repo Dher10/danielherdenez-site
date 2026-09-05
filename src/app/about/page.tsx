@@ -3,7 +3,6 @@ import Link from 'next/link';
 import Nav from '@/components/sections/nav';
 import Footer from '@/components/sections/footer';
 import Eyebrow from '@/components/shared/eyebrow';
-import HeroMesh from '@/components/shared/hero-mesh';
 import Reveal from '@/components/shared/reveal';
 
 export const metadata: Metadata = {
@@ -18,7 +17,6 @@ export default function AboutPage() {
       <Nav />
       <main id="main" tabIndex={-1}>
         <section className="page-hero">
-          <HeroMesh />
           <div className="container page-hero-inner">
             <div className="prose-narrow">
               <Eyebrow>About</Eyebrow>
@@ -112,9 +110,9 @@ export default function AboutPage() {
                       of cases a month to well over a million handled in total, unified what had
                       been separate tools, and rebuilt the flows around the things that hurt: wasted
                       time, rework, and the failures that turned into penalties. It was also where I
-                      first put AI into real production, not demos, with models that classified
-                      incoming cases and helped draft responses, designed around how a person and
-                      the system would hand work back and forth.
+                      first shipped AI to production users, with models that classified incoming
+                      cases and helped draft responses, designed around how a person and the system
+                      would hand work back and forth.
                     </p>
                   </div>
                 </div>

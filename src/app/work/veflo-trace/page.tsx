@@ -4,7 +4,6 @@ import Nav from '@/components/sections/nav';
 import Footer from '@/components/sections/footer';
 import CaseCard from '@/components/shared/case-card';
 import Eyebrow from '@/components/shared/eyebrow';
-import HeroMesh from '@/components/shared/hero-mesh';
 import Reveal from '@/components/shared/reveal';
 import { internalPlatform, pmAiPlaybook } from '@/lib/cases';
 
@@ -20,7 +19,6 @@ export default function VefloTracePage() {
       <Nav />
       <main id="main" tabIndex={-1}>
         <section className="page-hero">
-          <HeroMesh />
           <div className="container page-hero-inner">
             <div className="prose-narrow">
               <Eyebrow>Veflo Trace &middot; Since 2025</Eyebrow>
@@ -42,8 +40,7 @@ export default function VefloTracePage() {
                   Veflo Trace runs structured operational flows: customer requests, support tickets,
                   approval chains, and any process that moves through stages, owners, and rules. It
                   is often read first as a ticketing tool, but the product is built around a broader
-                  idea: the platform should fit the operation, not force every team into the same
-                  rigid model.
+                  idea: the platform should adapt to how each team already works.
                 </p>
                 <p>
                   That idea came from work already tested in real operations. The platforms before
@@ -116,9 +113,9 @@ export default function VefloTracePage() {
                       The same restraint shaped the technical foundation. It follows Principle 8 of
                       Jeffrey Liker&apos;s The Toyota Way: use only reliable, thoroughly tested
                       technology that serves your people and your processes. For Trace, that meant
-                      treating data structure as product infrastructure, not as implementation
-                      detail. Traceability depends on clean data, so the data layer came before broad
-                      connectivity. The creation API was scoped later as a controlled way to bring
+                      treating data structure as product infrastructure. Traceability depends on
+                      clean data, so the data layer came before broad connectivity. The creation API
+                      was scoped later as a controlled way to bring
                       cases from public forms and client applications into the managed flow.
                     </p>
                   </div>

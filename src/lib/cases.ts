@@ -32,7 +32,7 @@ export const internalPlatform: CaseCardProps = {
 export const pmAiPlaybook: CaseCardProps = {
   meta: 'case \u00b7 03',
   title: 'How I use AI to do product work',
-  desc: 'A public library documenting the prompts, workflows, and frameworks I use to do PM work faster and better. Built in production, not theory.',
+  desc: 'A public library documenting the prompts, workflows, and frameworks I use to do PM work faster and better.',
   tags: ['Open source', 'GitHub', 'Since 2026'],
   badge: 'Coming soon',
 };

@@ -4,7 +4,6 @@ import Nav from '@/components/sections/nav';
 import Footer from '@/components/sections/footer';
 import CaseCard from '@/components/shared/case-card';
 import Eyebrow from '@/components/shared/eyebrow';
-import HeroMesh from '@/components/shared/hero-mesh';
 import Reveal from '@/components/shared/reveal';
 import { pmAiPlaybook, vefloTrace } from '@/lib/cases';
 
@@ -20,7 +19,6 @@ export default function InternalPlatformPage() {
       <Nav />
       <main id="main" tabIndex={-1}>
         <section className="page-hero">
-          <HeroMesh />
           <div className="container page-hero-inner">
             <div className="prose-narrow">
               <Eyebrow>Internal platform &middot; Since 2026</Eyebrow>

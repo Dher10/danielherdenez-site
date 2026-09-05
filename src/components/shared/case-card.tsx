@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment } from 'react';
-import { motion, type Variants } from 'framer-motion';
+import { motion, useReducedMotion, type Variants } from 'framer-motion';
 
 export interface CaseCardProps {
   meta: string;
@@ -27,6 +27,8 @@ export default function CaseCard({
   badge,
   variants,
 }: CaseCardProps) {
+  const shouldReduce = useReducedMotion();
+
   const body = (
     <>
       <div className="case-head">
@@ -66,7 +68,25 @@ export default function CaseCard({
   }
 
   return (
-    <motion.a href={href} className="case" variants={variants}>
+    <motion.a
+      href={href}
+      className="case"
+      variants={variants}
+      // The -2px lift is specified in DESIGN.md, but it cannot live in CSS here:
+      // this is a motion component, so Framer's inline transform always beats
+      // `.case:hover { transform }` from the stylesheet. Background and border
+      // stay in CSS, which Framer does not touch.
+      //
+      // Gated on useReducedMotion because MotionConfig reducedMotion="user"
+      // only skips the *animation* and still applies the end value, which would
+      // leave the card jumping 2px on hover. Unlike `initial`, whileHover has no
+      // server-rendered style, so branching on it is hydration-safe.
+      whileHover={
+        shouldReduce
+          ? undefined
+          : { y: -2, transition: { duration: 0.2, ease: [0.16, 1, 0.3, 1] as const } }
+      }
+    >
       {body}
     </motion.a>
   );
