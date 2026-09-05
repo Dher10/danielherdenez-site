@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import localFont from 'next/font/local';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
@@ -59,6 +59,13 @@ export const metadata: Metadata = {
       'Product Manager building AI-native workflow platforms and SaaS products. Currently at MindTechSourcing, shipping tools that make teams faster.',
     images: ['https://danielherdenez.com/og-image.png'],
   },
+};
+
+// Single value, not the `media: '(prefers-color-scheme: dark)'` form. Dark is the
+// universal default here regardless of OS preference (DESIGN.md, Conventions), so
+// a media-matched theme-color would paint light browser chrome around a dark page.
+export const viewport: Viewport = {
+  themeColor: '#0E0E0F',
 };
 
 const themeScript = `(function(){try{var s=localStorage.getItem('dh-theme');if(s==='light'){document.documentElement.setAttribute('data-theme','light')}}catch(e){}})()`;

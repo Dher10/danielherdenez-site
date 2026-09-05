@@ -10,6 +10,8 @@ The home page is the first of several screens. Other routes (case studies, about
 > 1. **Light-mode palette.** The page background moved to a warm cream and work/artifact cards moved to a sage tint with a desaturated-sage hairline plus a soft shadow. Sage remains the single accent; cream and sage now define the light-mode surfaces, with separation carried by warm/cool temperature contrast rather than heavier borders. Dark mode is unchanged. Updated values live in **Design Tokens → Colors — Light** and in the **Card hover** interaction note below.
 > 2. **Theme default.** Dark mode is now the universal default for all new visitors. `prefers-color-scheme` is no longer used as a fallback — the bootstrap script ignores the OS preference and applies light only if the user has previously toggled it. Updated references are in **Conventions**, **layout.tsx requirements**, and **Theme toggle** below.
 
+> **Revision — 2026-09-05 (post-launch):** `components/ui/button.tsx` was deleted. The shipped site renders its buttons with the `.btn` / `.btn-primary` / `.btn-ghost` CSS classes documented under **Hero → CTAs**; the shadcn Button was created by the scaffold and never imported anywhere. It still appears in the **Files to Generate** tree below, which is kept as the original handoff record. No shadcn primitives are in use today. `src/lib/utils.ts` and the `class-variance-authority` / `radix-ui` dependencies were left in place so a future `shadcn add` still works.
+
 ---
 
 ## About the Design Files
