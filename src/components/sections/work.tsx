@@ -1,6 +1,6 @@
 'use client';
 
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import CaseCard from '@/components/shared/case-card';
 import SectionHead from '@/components/shared/section-head';
 
@@ -42,17 +42,17 @@ const cardVariants = {
 };
 
 export default function Work() {
-  const shouldReduce = useReducedMotion();
-
+  // Reduced motion is handled by MotionConfig in the root layout — see
+  // motion-provider.tsx. Branching the tree here stranded the SSR opacity:0.
   return (
     <section id="work" className="work">
       <div className="container">
         <SectionHead index="01 — Work" heading="What I'm building right now." />
         <motion.div
           className="work-grid"
-          variants={shouldReduce ? undefined : containerVariants}
-          initial={shouldReduce ? false : 'hidden'}
-          whileInView={shouldReduce ? undefined : 'show'}
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="show"
           viewport={{ once: true, margin: '0px 0px -10% 0px' }}
         >
           {cases.map((c, i) => (
@@ -64,7 +64,7 @@ export default function Work() {
               desc={c.desc}
               tags={c.tags}
               cta={c.cta}
-              variants={shouldReduce ? undefined : cardVariants}
+              variants={cardVariants}
             />
           ))}
         </motion.div>

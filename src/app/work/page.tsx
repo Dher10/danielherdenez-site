@@ -42,36 +42,37 @@ export default function WorkPage() {
   return (
     <>
       <Nav />
-
-      <section className="page-hero">
-        <HeroMesh />
-        <div className="container page-hero-inner">
-          <div className="prose-narrow">
-            <Eyebrow>Work</Eyebrow>
-            <h1>Things I&apos;ve built and written.</h1>
-          </div>
-        </div>
-      </section>
-
-      <section className="work">
-        <div className="container">
-          <Reveal>
-            <div className="work-grid">
-              {cases.map((caseStudy) => (
-                <CaseCard
-                  key={caseStudy.title}
-                  href={caseStudy.href}
-                  meta={caseStudy.meta}
-                  title={caseStudy.title}
-                  desc={caseStudy.desc}
-                  tags={caseStudy.tags}
-                  cta={caseStudy.cta}
-                />
-              ))}
+      <main id="main" tabIndex={-1}>
+        <section className="page-hero">
+          <HeroMesh />
+          <div className="container page-hero-inner">
+            <div className="prose-narrow">
+              <Eyebrow>Work</Eyebrow>
+              <h1>Things I&apos;ve built and written.</h1>
             </div>
-          </Reveal>
-        </div>
-      </section>
+          </div>
+        </section>
+
+        <section className="work">
+          <div className="container">
+            <Reveal>
+              <div className="work-grid">
+                {cases.map((caseStudy) => (
+                  <CaseCard
+                    key={caseStudy.title}
+                    href={caseStudy.href}
+                    meta={caseStudy.meta}
+                    title={caseStudy.title}
+                    desc={caseStudy.desc}
+                    tags={caseStudy.tags}
+                    cta={caseStudy.cta}
+                  />
+                ))}
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      </main>
 
       <Footer />
     </>

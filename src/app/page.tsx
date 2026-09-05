@@ -12,12 +12,13 @@ export default function Home() {
   return (
     <>
       <Nav />
-      <span id="top" />
-      <Hero />
-      <Proof />
-      <Work />
-      <About />
-      <Writing />
+      <main id="main" tabIndex={-1}>
+        <Hero />
+        <Proof />
+        <Work />
+        <About />
+        <Writing />
+      </main>
       <Footer />
     </>
   );

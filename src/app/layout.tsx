@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import MotionProvider from '@/components/shared/motion-provider';
 import './globals.css';
 
 const geistSans = localFont({
@@ -79,7 +80,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        {children}
+        <a className="skip-link" href="#main">
+          Skip to content
+        </a>
+        <MotionProvider>{children}</MotionProvider>
         <Analytics />
         <SpeedInsights />
       </body>

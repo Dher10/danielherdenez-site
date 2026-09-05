@@ -2,7 +2,7 @@
 
 export default function NotFound() {
   return (
-    <main className="min-h-screen flex items-center justify-center px-8 py-24">
+    <main id="main" tabIndex={-1} className="min-h-screen flex items-center justify-center px-8 py-24">
       <div className="max-w-xl text-center">
         <p
           className="font-mono uppercase tracking-wider mb-8"

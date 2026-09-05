@@ -1,18 +1,17 @@
 'use client';
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 interface RevealProps {
   children: React.ReactNode;
   className?: string;
 }
 
+/**
+ * Reduced motion is handled by MotionConfig in the root layout, not by
+ * branching here — see motion-provider.tsx. The tree must stay identical
+ * between server and client or the SSR `initial` style gets stranded.
+ */
 export default function Reveal({ children, className }: RevealProps) {
-  const shouldReduce = useReducedMotion();
-
-  if (shouldReduce) {
-    return <div className={className}>{children}</div>;
-  }
-
   return (
     <motion.div
       className={className}

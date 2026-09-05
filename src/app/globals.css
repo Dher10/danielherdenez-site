@@ -8,7 +8,7 @@
   --fg-0: #F5F4F0;
   --fg-1: #C9C7C0;
   --fg-2: #8F8D86;
-  --fg-3: #5C5B56;
+  --fg-3: #7D7C77;
   --hairline: rgba(245, 244, 240, 0.08);
   --hairline-strong: rgba(245, 244, 240, 0.14);
   --accent-fg: #7B9F92;
@@ -95,8 +95,8 @@ html, body {
   --bg-3: #E2EDE8;
   --fg-0: #1A1A1C;
   --fg-1: #3F3E3A;
-  --fg-2: #6F6E68;
-  --fg-3: #A3A199;
+  --fg-2: #62615B;
+  --fg-3: #706E66;
   --hairline: rgba(26, 26, 28, 0.08);
   --hairline-strong: rgba(26, 26, 28, 0.14);
   --accent-fg: #4A6B5F;
@@ -111,6 +111,38 @@ html, body {
   *, *::before, *::after { box-sizing: border-box; }
   body { margin: 0; }
   html { scroll-behavior: smooth; }
+
+  /* ---------- Focus ----------
+     One ring for every interactive element. :focus-visible so it only shows
+     for keyboard/AT navigation, never on mouse click. The outline follows
+     each element's own border-radius. */
+  :focus-visible {
+    outline: 2px solid var(--accent-fg);
+    outline-offset: 3px;
+  }
+
+  /* ---------- Skip link ----------
+     First tabbable element on the page; off-canvas until focused. */
+  .skip-link {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    z-index: 100;
+    transform: translateY(calc(-100% - var(--space-8)));
+    padding: 10px 16px;
+    border-radius: var(--radius-md);
+    background: var(--accent-bg);
+    color: var(--accent-ink);
+    font-family: var(--font-mono), 'Geist Mono', ui-monospace, monospace;
+    font-size: var(--fs-13);
+    letter-spacing: var(--tracking-mono);
+    text-decoration: none;
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .skip-link:focus { transform: translateY(0); }
+
+  /* Anchor targets clear the sticky nav (~66px) instead of hiding under it. */
+  :target { scroll-margin-top: var(--space-20); }
 
   /* Containers per design system tokens */
   html .container {
@@ -184,7 +216,9 @@ html, body {
   .nav-links a:hover, .nav-links a.active { color: var(--fg-0); }
 
   .theme-toggle {
-    all: unset; cursor: pointer;
+    appearance: none; background: none;
+    margin: 0; padding: 0; font: inherit;
+    cursor: pointer;
     width: 34px; height: 34px;
     border-radius: var(--radius-md);
     border: 1px solid var(--hairline);
@@ -651,7 +685,11 @@ html, body {
 }
 
 .mobile-menu-toggle {
-  all: unset;
+  appearance: none;
+  background: none;
+  margin: 0;
+  padding: 0;
+  font: inherit;
   cursor: pointer;
   width: 44px;
   height: 44px;
@@ -877,3 +915,32 @@ html, body {
   text-wrap: pretty;
 }
 .cta-row { display: flex; gap: var(--space-5); margin-top: var(--space-10); flex-wrap: wrap; align-items: center; }
+
+/* ============================================================
+   Reduced motion
+   Surgical, not a blanket kill: transform/position motion goes away,
+   color and background feedback stays so hover/focus still read.
+   Framer Motion is handled separately via useReducedMotion().
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+
+  /* Drifting hero mesh — the only infinite animation on the site */
+  .hero-mesh::before,
+  .hero-mesh::after { animation: none; }
+
+  /* Hover lift on buttons and cards */
+  .btn:hover,
+  .btn:active,
+  .case:hover,
+  .artifact:hover { transform: none; }
+
+  /* Arrows that slide, and gaps that grow */
+  .btn:hover .arrow,
+  .btn-ghost:hover .arrow.up-right { transform: none; }
+  .case:hover .read { gap: 6px; }
+  .ghost-link:hover { gap: 6px; }
+
+  /* Skip link should appear instantly, not slide in */
+  .skip-link { transition: none; }
+}
