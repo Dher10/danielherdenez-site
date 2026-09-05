@@ -1,34 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import CaseCard, { type CaseCardProps } from '@/components/shared/case-card';
+import CaseCard from '@/components/shared/case-card';
 import SectionHead from '@/components/shared/section-head';
-
-const cases: CaseCardProps[] = [
-  {
-    meta: 'case \u00b7 01',
-    title: 'From workflow software to AI-assisted operations',
-    desc: 'How a case platform built on real operations work grew into one that puts AI inside the workflow, on purpose and under control.',
-    tags: ['Product strategy', 'AI-assisted', 'Since 2025'],
-    cta: 'read',
-    href: '/work/veflo-trace',
-  },
-  {
-    meta: 'case \u00b7 02',
-    title: 'Designing product work beside an agentic build system',
-    desc: 'What it takes to be product manager of an internal platform built by a fast-moving agentic system, and how product work keeps pace without becoming the bottleneck.',
-    tags: ['Platform', 'AI-assisted', 'Since 2026'],
-    cta: 'read',
-    href: '/work/internal-platform',
-  },
-  {
-    meta: 'case \u00b7 03',
-    title: 'How I use AI to do product work',
-    desc: 'A public library documenting the prompts, workflows, and frameworks I use to do PM work faster and better. Built in production, not theory.',
-    tags: ['Open source', 'GitHub', 'Since 2026'],
-    badge: 'Coming soon',
-  },
-];
+import { cases } from '@/lib/cases';
 
 const containerVariants = {
   hidden: {},

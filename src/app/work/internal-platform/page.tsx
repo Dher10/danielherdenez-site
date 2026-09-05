@@ -6,6 +6,7 @@ import CaseCard from '@/components/shared/case-card';
 import Eyebrow from '@/components/shared/eyebrow';
 import HeroMesh from '@/components/shared/hero-mesh';
 import Reveal from '@/components/shared/reveal';
+import { pmAiPlaybook, vefloTrace } from '@/lib/cases';
 
 export const metadata: Metadata = {
   title: 'Designing product work beside an agentic build system \u2014 Daniel Herdenez',
@@ -133,21 +134,8 @@ export default function InternalPlatformPage() {
 
             <Reveal>
               <div className="work-grid">
-                <CaseCard
-                  href="/work/veflo-trace"
-                  meta="case &middot; 01"
-                  title="From workflow software to AI-assisted operations"
-                  desc="How a case platform built on real operations work grew into one that puts AI inside the workflow, on purpose and under control."
-                  tags={['Product strategy', 'AI-assisted', 'Since 2025']}
-                  cta="read"
-                />
-                <CaseCard
-                  meta="case &middot; 03"
-                  title="How I use AI to do product work"
-                  desc="A public library documenting the prompts, workflows, and frameworks I use to do PM work faster and better. Built in production, not theory."
-                  tags={['Open source', 'GitHub', 'Since 2026']}
-                  badge="Coming soon"
-                />
+                <CaseCard {...vefloTrace} />
+                <CaseCard {...pmAiPlaybook} />
               </div>
             </Reveal>
           </div>

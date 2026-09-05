@@ -6,6 +6,7 @@ import CaseCard from '@/components/shared/case-card';
 import Eyebrow from '@/components/shared/eyebrow';
 import HeroMesh from '@/components/shared/hero-mesh';
 import Reveal from '@/components/shared/reveal';
+import { internalPlatform, pmAiPlaybook } from '@/lib/cases';
 
 export const metadata: Metadata = {
   title: 'Veflo Trace \u2014 Daniel Herdenez',
@@ -175,22 +176,9 @@ export default function VefloTracePage() {
 
             <Reveal>
               <div className="work-grid">
-                {/* TODO: Replace placeholder hrefs when the remaining case study routes exist. */}
-                <CaseCard
-                  href="/work/internal-platform"
-                  meta="Internal platform &middot; Since 2026"
-                  title="Designing product work beside an agentic build system"
-                  desc="What it takes to be product manager of an internal platform built by a fast-moving agentic system, and how product work keeps pace without becoming the bottleneck."
-                  tags={['Platform', 'AI-assisted', 'Since 2026']}
-                  cta="read"
-                />
-                <CaseCard
-                  meta="Open source"
-                  title="How I use AI to do product work"
-                  desc="A public library documenting the prompts, workflows, and frameworks I use to do PM work faster and better. Built in production, not theory."
-                  tags={['Open source', 'GitHub', 'Since 2026']}
-                  badge="Coming soon"
-                />
+                {/* This grid labels its neighbours by name, not by case number. */}
+                <CaseCard {...internalPlatform} meta="Internal platform &middot; Since 2026" />
+                <CaseCard {...pmAiPlaybook} meta="Open source" />
               </div>
             </Reveal>
           </div>
