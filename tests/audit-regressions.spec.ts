@@ -54,6 +54,24 @@ test('mobile navigation exposes and styles the current page', async ({ page }) =
   await expect(nav.getByRole('link', { name: 'Work', exact: true })).toHaveAttribute('aria-current', 'page');
 });
 
+test('footer social links keep a 44px mobile hit area', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+
+  const sizes = await page.locator('.foot-socials .social-link').evaluateAll((links) =>
+    links.map((link) => {
+      const styles = getComputedStyle(link);
+      return { width: styles.width, height: styles.height };
+    }),
+  );
+
+  expect(sizes).toEqual([
+    { width: '44px', height: '44px' },
+    { width: '44px', height: '44px' },
+    { width: '44px', height: '44px' },
+  ]);
+});
+
 test('every route shares its own title, description and URL', async ({ page }) => {
   for (const route of routes) {
     await page.goto(route);
@@ -102,4 +120,15 @@ test('case links navigate without replacing the document and support browser bac
   await expect(page).toHaveURL(/\/work$/);
   await expect(page.locator('.case-inactive')).toHaveCount(1);
   await expect(page.locator('.case-inactive a')).toHaveCount(0);
+});
+
+test('case-to-case navigation from More work resets scroll to the top', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.goto('/work/veflo-trace');
+  await page.getByRole('heading', { name: 'More work' }).scrollIntoViewIfNeeded();
+
+  await page.getByRole('link', { name: /Internal platform/ }).click();
+
+  await expect(page).toHaveURL(/\/work\/internal-platform$/);
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });

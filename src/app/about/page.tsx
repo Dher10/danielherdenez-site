@@ -13,9 +13,29 @@ export const metadata: Metadata = createPageMetadata({
     'How I got here: from process improvement and consulting to building AI-native workflow products. Product Manager at MindTechSourcing.',
 });
 
+const profile = {
+  '@context': 'https://schema.org',
+  '@type': 'ProfilePage',
+  url: 'https://danielherdenez.com/about',
+  mainEntity: {
+    '@type': 'Person',
+    '@id': 'https://danielherdenez.com/#person',
+    name: 'Daniel Herdenez',
+    url: 'https://danielherdenez.com',
+    sameAs: [
+      'https://www.linkedin.com/in/daniel-herdenez-5160161a9',
+      'https://github.com/Dher10',
+    ],
+  },
+};
+
 export default function AboutPage() {
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(profile).replace(/</g, '\\u003c') }}
+      />
       <Nav />
       <main id="main" tabIndex={-1}>
         <section className="page-hero">
