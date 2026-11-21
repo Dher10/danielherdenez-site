@@ -31,6 +31,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Estos ya están permitidos sin confirmación en `.claude/settings.local.json`.
 
+## Flujo de ramas
+
+- `dev` es preprod y la rama de trabajo permanente. Vercel publica un preview de cada push a `dev`.
+- Los agentes hacen commit y push solo en `dev`, firmados como Daniel Herdenez <edherdenez@gmail.com>, sin Co-Authored-By, sin "Generated with" y sin ninguna atribución a IA.
+- Nunca commit ni push a `main`. Nunca force-push, rebase, `--no-verify` ni tags.
+- Daniel abre el PR de `dev` a `main` y hace el merge.
+- Después de cada merge, sincronizar `main` hacia `dev` con fast-forward (`git checkout dev && git pull --ff-only origin main`).
+
 ## Dos Playwright distintos — no confundir
 
 - **`@playwright/test`** (devDependency, carpeta `tests/`) → suite de pruebas automatizadas. Se corre con `npx playwright test`.
