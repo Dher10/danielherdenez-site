@@ -166,6 +166,7 @@ There is **no other logo lockup or icon**. Do not generate one.
 - **Border-bottom**: 1px `var(--hairline)`.
 - **Background**: Two slow-drifting radial gradients (sage accent at low opacity, blurred 60px). Animate via Framer Motion or pure CSS keyframes — durations 18s and 22s, both `cubic-bezier(0.65, 0, 0.35, 1)` infinite alternate. Disable under `prefers-reduced-motion`.
 - **Eyebrow**: `available · summer 2026` — Geist Mono 12px, `var(--fg-2)`, with a 6×6px sage dot (4px sage-soft ring via `box-shadow`).
+  > **Updated 2026-11-20.** The shipped eyebrow reads `New case study · PitchCraft` and links to `/work/pitchcraft`. The link inherits the eyebrow color and turns `var(--fg-0)` on hover; the dot and type are unchanged.
 - **Headline (h1)**: Instrument Serif 400, `clamp(2.5rem, 5vw + 1rem, 5rem)`, line-height 1.02, letter-spacing -0.025em. `max-width: 22ch`. Exact copy:
   > **Product Manager. I turn complex problems into *shipped products*.**
 
@@ -248,6 +249,16 @@ There is **no other logo lockup or icon**. Do not generate one.
   - Right: 3 social icons (Email, LinkedIn, GitHub) — Lucide-style stroke icons, 20×20px, `var(--fg-2)`, 36×36px hit area, `var(--radius-md)`. Hover → `var(--fg-0)` + `var(--bg-2)` fill.
 - **Bottom strip**: 1px hairline border-top, padding-top `var(--space-6)`, centered Geist Mono 12px `var(--fg-3)`. Copy:
   > © 2026 Daniel Herdenez · Built with Next.js · Deployed on Vercel
+
+### 7. Case study pieces
+
+Added 2026-11-20 with `/work/pitchcraft`. Tokens only, no new colors. Styles live in the "Case study pieces" block of `globals.css`.
+
+- **Facts strip** (`FactsStrip`): `<dl>` between hairline top and bottom borders, 1 column on mobile, 2 from `768px`. Label: Geist Mono 12px, `--fg-2`, 0.08em, uppercase. Value: Geist Sans 15px, `--fg-0`; links in `--accent-fg`. Facts only, one line each.
+- **Framed figure** (`CaseFigure`): `figure` with a mono caption (12px, `--fg-2`, max `64ch`). Default body is a card: `--bg-2`, 1px `--hairline`, `--radius-lg`, padding `--space-6` (`--space-8` from `768px`). `bare` drops the frame for screenshots, which get a hairline and `--radius-md`. Light mode border uses the same sage `#DDE7E2` as the cards.
+- **Before/after pair** (`.before-after`): two phone screenshots in a 2-column grid with mono uppercase labels "Before" / "After". Inside a `bare` figure; max `40rem` from `768px`.
+- **Pipeline figure** (`PitchcraftPipeline`): ordered list of steps, 1 column on mobile, 5 from `900px`. Step: `--bg-1` (light: `--bg-0`), 1px `--hairline`, `--radius-md`. Steps 3 and 4 ("Write and check", "Validate") use an `--accent-fg` border to mark where claims are checked.
+- **Unit-chart figures** (`PitchcraftEval`): two panels (3fr / 2fr from `768px`) of unit squares. Sentence units 18px, report units 36×48px, `--fg-3` at 45% opacity. The marked unit (error / unsupported) is solid `--accent-fg`. The big number is Instrument Serif 28px; the legend is mono 12px.
 
 ---
 
@@ -482,7 +493,7 @@ In `/screenshots/`:
 - `home-dark-01-hero.png` through `home-dark-05-footer.png` — five section captures of dark mode (default).
 - `home-light-01-hero.png` through `home-light-05-footer.png` — five section captures of light mode.
 
-These are captured at 909×540 each from the prototype iframe. Use them for visual reference; the source of truth is `design_references/Home.html` — open it in a browser to see the full page, hover states, and animations live.
+These are captured at 909×540 each from the prototype iframe. Use them for visual reference; the source of truth for the home page is the shipped site itself (`src/app/page.tsx` and `src/app/globals.css`). `Home.html` at the repo root is the original prototype, kept for reference; the `design_references/` folder named in the original handoff does not exist in this repo.
 
 > Note: the light-mode screenshots in this bundle predate the 2026-05-29 palette revision and show the original warm-white/sand surfaces. The current live light mode uses the cream + sage palette documented in **Colors — Light**.
 

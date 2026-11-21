@@ -5,7 +5,7 @@ import Footer from '@/components/sections/footer';
 import CaseCard from '@/components/shared/case-card';
 import Eyebrow from '@/components/shared/eyebrow';
 import Reveal from '@/components/shared/reveal';
-import { pmAiPlaybook, vefloTrace } from '@/lib/cases';
+import { pitchcraft, vefloTrace } from '@/lib/cases';
 import { createPageMetadata } from '@/lib/metadata';
 
 export const metadata: Metadata = createPageMetadata({
@@ -135,7 +135,7 @@ export default function InternalPlatformPage() {
             <Reveal>
               <div className="work-grid">
                 <CaseCard {...vefloTrace} />
-                <CaseCard {...pmAiPlaybook} />
+                <CaseCard {...pitchcraft} />
               </div>
             </Reveal>
           </div>

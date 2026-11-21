@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const ROUTES = ['/', '/about', '/work', '/work/veflo-trace', '/work/internal-platform'];
+const ROUTES = ['/', '/about', '/work', '/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft'];
 
 // --- Contrast helpers (run in Node test context, not browser) ---
 function relativeLuminance(rgb: { r: number; g: number; b: number }): number {
@@ -288,21 +288,17 @@ test.describe('No dead links', () => {
     });
   }
 
-  test('case 03 renders as a non-interactive card, not a link', async ({ page }) => {
+  test('case 03 links to the PitchCraft case study', async ({ page }) => {
     await page.goto('/');
-    const inactive = page.locator('.case-inactive');
-    await expect(inactive).toHaveCount(1);
-    // It must not be an anchor, and must carry the status badge instead of a cta
-    expect(await inactive.evaluate((el) => el.tagName)).not.toBe('A');
-    await expect(inactive.locator('.case-badge')).toHaveText('Coming soon');
-    await expect(inactive.locator('.read')).toHaveCount(0);
+    await expect(page.locator('.case-inactive')).toHaveCount(0);
+    await expect(page.locator('a.case[href="/work/pitchcraft"]')).toHaveCount(1);
   });
 
-  test('the three work cards are still present on /work', async ({ page }) => {
+  test('the three work cards are all links on /work', async ({ page }) => {
     await page.goto('/work');
     await expect(page.locator('.case')).toHaveCount(3);
-    await expect(page.locator('.case-inactive')).toHaveCount(1);
-    await expect(page.locator('a.case')).toHaveCount(2);
+    await expect(page.locator('.case-inactive')).toHaveCount(0);
+    await expect(page.locator('a.case')).toHaveCount(3);
   });
 
   test('internal-platform prose no longer links to a missing route', async ({ page }) => {

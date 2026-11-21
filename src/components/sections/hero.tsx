@@ -1,4 +1,5 @@
 import HeroMesh from '@/components/shared/hero-mesh';
+import Link from 'next/link';
 import Eyebrow from '@/components/shared/eyebrow';
 
 export default function Hero() {
@@ -6,7 +7,9 @@ export default function Hero() {
     <section className="hero">
       <HeroMesh />
       <div className="container hero-inner">
-        <Eyebrow>available · summer 2026</Eyebrow>
+        <Eyebrow>
+          <Link href="/work/pitchcraft">New case study · PitchCraft</Link>
+        </Eyebrow>
         <h1>
           Product Manager. I turn complex problems into{' '}
           <span className="em">shipped products</span>.

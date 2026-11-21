@@ -30,16 +30,21 @@ export default function Writing() {
               </div>
             </a>
 
-            <a href="#contact" className="artifact">
-              <div className="a-meta">essays · coming soon</div>
-              <h3>Essays coming soon</h3>
+            <a
+              href="https://github.com/Dher10/pitchcraft-agent"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="artifact"
+            >
+              <div className="a-meta">repository · github</div>
+              <h3>pitchcraft-agent</h3>
               <p>
-                Notes on AI product management, operations discipline, and how to ship
-                software that earns trust.
+                The code behind PitchCraft, with its decision log, data contract, QA reports and the
+                evaluation of its AI writer.
               </p>
               <div className="a-foot">
                 <span className="ghost-link">
-                  Reach out <span className="arrow">→</span>
+                  View on GitHub <span className="arrow up-right">↗</span>
                 </span>
               </div>
             </a>

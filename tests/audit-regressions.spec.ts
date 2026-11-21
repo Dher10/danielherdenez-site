@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const routes = ['/', '/about', '/work', '/work/veflo-trace', '/work/internal-platform'];
+const routes = ['/', '/about', '/work', '/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft'];
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -84,7 +84,11 @@ test('every route shares its own title, description and URL', async ({ page }) =
     await expect(page.locator('meta[property="og:url"]')).toHaveAttribute(
       'content', `https://danielherdenez.com${route === '/' ? '' : route}`,
     );
-    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', /\/og-image\.png$/);
+    const ogImage = route === '/work/pitchcraft' ? /\/work\/pitchcraft\/og\.png$/ : /\/og-image\.png$/;
+    await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', ogImage);
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href', `https://danielherdenez.com${route === '/' ? '' : route}`,
+    );
   }
 });
 
@@ -118,8 +122,7 @@ test('case links navigate without replacing the document and support browser bac
   expect(documents).toEqual([]);
   await page.goBack();
   await expect(page).toHaveURL(/\/work$/);
-  await expect(page.locator('.case-inactive')).toHaveCount(1);
-  await expect(page.locator('.case-inactive a')).toHaveCount(0);
+  await expect(page.locator('a.case')).toHaveCount(3);
 });
 
 test('case-to-case navigation from More work resets scroll to the top', async ({ page }) => {

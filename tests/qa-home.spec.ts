@@ -76,8 +76,10 @@ test.describe('Section 2 — Hero', () => {
     await page.goto(URL);
   });
 
-  test('eyebrow text "available · summer 2026" is visible', async ({ page }) => {
-    await expect(page.locator('.eyebrow')).toContainText('available · summer 2026');
+  test('eyebrow "New case study · PitchCraft" links to the case', async ({ page }) => {
+    const eyebrow = page.locator('.hero .eyebrow');
+    await expect(eyebrow).toContainText('New case study · PitchCraft');
+    await expect(eyebrow.locator('a')).toHaveAttribute('href', '/work/pitchcraft');
   });
 
   test('h1 contains "Product Manager" and "shipped products"', async ({ page }) => {
@@ -162,8 +164,8 @@ test.describe('Section 4 — Work', () => {
     await expect(page.locator('.case').nth(1).locator('h3')).toContainText('agentic build system');
   });
 
-  test('card 3 title contains "AI to do product work"', async ({ page }) => {
-    await expect(page.locator('.case').nth(2).locator('h3')).toContainText('AI to do product work');
+  test('card 3 title contains "Kaggle capstone"', async ({ page }) => {
+    await expect(page.locator('.case').nth(2).locator('h3')).toContainText('Kaggle capstone');
   });
 
   test('cards 1 and 2 are side by side (same row) at 1280px', async ({ page }) => {
@@ -226,12 +228,12 @@ test.describe('Section 6 — Writing', () => {
     await expect(page.locator('#writing').getByText('pm-ai-playbook')).toBeVisible();
   });
 
-  test('"Essays coming soon" card is visible', async ({ page }) => {
-    await expect(page.locator('#writing').getByText('Essays coming soon')).toBeVisible();
+  test('"pitchcraft-agent" repository card is visible', async ({ page }) => {
+    await expect(page.locator('#writing').getByText('pitchcraft-agent')).toBeVisible();
   });
 
-  test('"View on GitHub" link exists', async ({ page }) => {
-    await expect(page.locator('#writing').getByText(/view on github/i)).toBeVisible();
+  test('both artifact cards link to GitHub', async ({ page }) => {
+    await expect(page.locator('#writing').getByText(/view on github/i)).toHaveCount(2);
   });
 });
 

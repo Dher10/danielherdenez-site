@@ -184,10 +184,10 @@ export default function AboutPage() {
                   usually can&apos;t leave it alone.
                 </p>
                 <p>
-                  There&apos;s more in motion. One of the things I&apos;m building is being made end
-                  to end with agentic AI, from the product work through to the code. Another is a
-                  product I&apos;m about to take ownership of. I&apos;ll share both when they&apos;re
-                  ready.
+                  PitchCraft is one of the things I&apos;ve built this way. It started as a Kaggle
+                  capstone and became a live baseball product, built end to end with AI coding
+                  agents. <Link href="/work/pitchcraft">The case study</Link> tells how it got
+                  there.
                 </p>
               </div>
             </Reveal>

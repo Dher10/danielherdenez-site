@@ -14,9 +14,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ## Estructura
 
-- `src/app/` — rutas (App Router). Existentes: `about/`, `work/`
+- `src/app/` — rutas (App Router). Existentes: `about/`, `work/` (incluye `work/pitchcraft/`)
 - `src/components/sections/` — secciones de página completas
-- `src/components/shared/` — componentes compartidos entre secciones
+- `src/components/shared/` — componentes compartidos entre secciones (incluye `FactsStrip` y `CaseFigure` para case studies)
+- `src/components/figures/` — figures específicos de un case study (PitchCraft: pipeline y eval)
 - `src/lib/` — utilidades y datos compartidos (`cases.ts` es la fuente única de los case studies)
 - `tests/` — specs de Playwright (test automatizado — ver distinción abajo)
 
@@ -48,8 +49,11 @@ Estos ya están permitidos sin confirmación en `.claude/settings.local.json`.
 
 ## Contexto abierto (informativo, no lista de tareas — puede quedar desactualizado, editar o borrar si ya no aplica)
 
-- Case 3 del portafolio (pm-ai-playbook) estaba bloqueado: las carpetas de contenido del repo estaban vacías. No activarlo como "case study" hasta tener contenido real.
+- Case 03 del portafolio ahora es PitchCraft (`/work/pitchcraft`, datos en `src/lib/cases.ts`). El copy aprobado es `PitchCraft_Caso_Texto_v4.md` (fuente de verdad; vive fuera del repo).
+- pm-ai-playbook ya no es un case study: vive en Writing como tarjeta de repositorio. No volver a activarlo como "case study" hasta tener contenido real en sus carpetas.
 - Las referencias al nombre viejo del repo `PM-AI-Prompts` deben apuntar al renombrado `pm-ai-playbook` (github.com/Dher10).
+- Piezas compartidas para futuros case studies: `FactsStrip` (`src/components/shared/facts-strip.tsx`) y `CaseFigure` (`src/components/shared/case-figure.tsx`). Los figures específicos de PitchCraft viven en `src/components/figures/`. Estilos y tokens: sección "Case study pieces" de `DESIGN.md`.
+- El eyebrow del hero dice "New case study · PitchCraft" y enlaza a `/work/pitchcraft` (cambiado 2026-11-20). Cuando deje de ser nuevo, cambiar el texto en `hero.tsx` y el test de `qa-home.spec.ts`.
 - Sin JS, todo lo que envuelve `Reveal` queda invisible: el SSR emite el estado `initial` de Framer como `opacity: 0` inline y, sin hidratación, nada lo resuelve. Se caen Proof, las tres case cards, About y Writing; sobreviven hero, nav, el section head de Work y el footer. Comparte causa raíz con el bug de reduced-motion arreglado el 2026-09-05 (el mismo `opacity: 0` del SSR sin dueño): ese fix resolvió el caso con JS, no este. Verificado con Playwright y `javaScriptEnabled: false` contra `next start`. Arreglarlo es una decisión de arquitectura (reveal por CSS, o no emitir estado oculto en SSR), no un parche.
 - `toBeVisible()` de Playwright no mira `opacity`: pasa sobre contenido con `opacity: 0`. Dejó pasar los dos casos de `Reveal` de arriba (reduced-motion y sin JS) con 39 tests en verde. Falta un helper de "visible de verdad" (opacity efectiva + dimensiones) para la suite — tarea aparte.
 - La suite de Playwright da 1-2 falsos negativos corriendo contra un dev server recién arrancado: el primer test de cada archivo puede caer con `page.goto: Test timeout` por arranque en frío, no por regresión. Visto en las tandas P1 y P3, y en ambas la re-corrida limpia dio 75/75. Si un test falla en la primera corrida, re-correr antes de investigar.

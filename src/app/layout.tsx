@@ -27,6 +27,7 @@ const geistMono = localFont({
 const instrumentSerif = localFont({
   src: [
     { path: '../../public/fonts/InstrumentSerif-Regular.woff2', weight: '400', style: 'normal' },
+    { path: '../../public/fonts/InstrumentSerif-Italic.woff2', weight: '400', style: 'italic' },
   ],
   variable: '--font-serif',
   display: 'swap',

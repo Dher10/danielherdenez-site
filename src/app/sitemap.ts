@@ -1,4 +1,4 @@
-﻿import type { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next';
 
 const BASE_URL = 'https://danielherdenez.com';
 
@@ -17,6 +17,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${BASE_URL}/work/internal-platform`,
+      lastModified,
+      changeFrequency: 'yearly',
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/work/pitchcraft`,
       lastModified,
       changeFrequency: 'yearly',
       priority: 0.7,

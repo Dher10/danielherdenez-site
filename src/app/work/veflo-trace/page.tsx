@@ -5,7 +5,7 @@ import Footer from '@/components/sections/footer';
 import CaseCard from '@/components/shared/case-card';
 import Eyebrow from '@/components/shared/eyebrow';
 import Reveal from '@/components/shared/reveal';
-import { internalPlatform, pmAiPlaybook } from '@/lib/cases';
+import { internalPlatform, pitchcraft } from '@/lib/cases';
 import { createPageMetadata } from '@/lib/metadata';
 
 export const metadata: Metadata = createPageMetadata({
@@ -177,7 +177,7 @@ export default function VefloTracePage() {
               <div className="work-grid">
                 {/* This grid labels its neighbours by name, not by case number. */}
                 <CaseCard {...internalPlatform} meta="Internal platform &middot; Since 2026" />
-                <CaseCard {...pmAiPlaybook} meta="Open source" />
+                <CaseCard {...pitchcraft} meta="PitchCraft &middot; Since 2026" />
               </div>
             </Reveal>
           </div>

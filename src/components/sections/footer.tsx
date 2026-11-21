@@ -3,7 +3,7 @@ import Monogram from '@/components/shared/monogram';
 
 export default function Footer() {
   return (
-    <footer id="contact" className="footer-inner" data-screen-label="05 Footer">
+    <footer id="contact" className="footer-inner">
       <div className="container">
         <div className="foot-grid">
           <div>
