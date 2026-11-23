@@ -41,3 +41,9 @@ yarn-error.log*
 next-env.d.ts
 
 /test-results/
+
+# editor
+.vscode/
+
+# python (the Claude Code guard and its tests)
+__pycache__/

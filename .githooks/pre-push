@@ -1,0 +1,55 @@
+#!/bin/sh
+# pre-push: runs before every push, from any tool (Claude Code, Codex, terminal).
+#   1. Pushes go only to dev or experiment/*. Never to main/master, never a tag.
+#   2. No deletion of a remote branch or tag.
+#   3. No non-fast-forward push (force): the remote tip must be an ancestor of what is pushed.
+# Git gives the remote name and URL as $1 and $2, and one line per ref on stdin:
+#   <local ref> <local sha> <remote ref> <remote sha>
+
+STATUS=0
+fail() {
+  echo "pre-push: blocked. $1" >&2
+  STATUS=1
+}
+is_zero() {
+  case "$1" in
+    *[!0]*) return 1 ;;
+    *) return 0 ;;
+  esac
+}
+
+while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
+  [ -z "$LOCAL_REF$REMOTE_REF" ] && continue
+
+  case "$REMOTE_REF" in
+    refs/heads/main|refs/heads/master)
+      fail "pushing to '${REMOTE_REF#refs/heads/}' is not allowed: main changes only through a PR merged by Daniel."
+      continue
+      ;;
+    refs/tags/*)
+      fail "pushing, moving or deleting a tag is not allowed ($REMOTE_REF)."
+      continue
+      ;;
+    refs/heads/dev|refs/heads/experiment/*)
+      ;;
+    *)
+      fail "pushes go only to dev or experiment/*, not to '$REMOTE_REF'."
+      continue
+      ;;
+  esac
+
+  if is_zero "$LOCAL_SHA"; then
+    fail "deleting the remote branch '${REMOTE_REF#refs/heads/}' is not allowed."
+    continue
+  fi
+
+  if ! is_zero "$REMOTE_SHA"; then
+    if ! git cat-file -e "$REMOTE_SHA^{commit}" 2>/dev/null; then
+      fail "the remote '${REMOTE_REF#refs/heads/}' has commits you do not have. Fetch and fast-forward first; never force."
+    elif ! git merge-base --is-ancestor "$REMOTE_SHA" "$LOCAL_SHA"; then
+      fail "non-fast-forward push to '${REMOTE_REF#refs/heads/}' (a force push) is not allowed."
+    fi
+  fi
+done
+
+exit $STATUS

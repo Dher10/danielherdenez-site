@@ -1,0 +1,34 @@
+#!/bin/sh
+# pre-commit: runs on every local commit, from any tool (Claude Code, Codex, terminal).
+#   1. No commit on main or master: work happens on dev; main changes only through a merged PR.
+#   2. Author and committer must be the owner.
+# Enable once per clone: git config core.hooksPath .githooks (see AGENTS.md).
+
+OWNER_NAME="Daniel Herdenez"
+OWNER_EMAIL="edherdenez@gmail.com"
+
+BRANCH=$(git symbolic-ref --quiet --short HEAD 2>/dev/null)
+case "$BRANCH" in
+  main|master)
+    echo "pre-commit: blocked. Commits are never made on '$BRANCH'. Switch to dev." >&2
+    exit 1
+    ;;
+esac
+
+name_of() { git var "$1" | sed -E 's/^(.*) <[^>]*>.*$/\1/'; }
+email_of() { git var "$1" | sed -E 's/^.*<([^>]*)>.*$/\1/'; }
+
+AUTHOR_NAME=$(name_of GIT_AUTHOR_IDENT)
+AUTHOR_EMAIL=$(email_of GIT_AUTHOR_IDENT)
+COMMITTER_NAME=$(name_of GIT_COMMITTER_IDENT)
+COMMITTER_EMAIL=$(email_of GIT_COMMITTER_IDENT)
+
+if [ "$AUTHOR_EMAIL" != "$OWNER_EMAIL" ] || [ "$COMMITTER_EMAIL" != "$OWNER_EMAIL" ] \
+  || [ "$AUTHOR_NAME" != "$OWNER_NAME" ] || [ "$COMMITTER_NAME" != "$OWNER_NAME" ]; then
+  echo "pre-commit: blocked. Author and committer must be $OWNER_NAME <$OWNER_EMAIL>." >&2
+  echo "  author:    $AUTHOR_NAME <$AUTHOR_EMAIL>" >&2
+  echo "  committer: $COMMITTER_NAME <$COMMITTER_EMAIL>" >&2
+  exit 1
+fi
+
+exit 0

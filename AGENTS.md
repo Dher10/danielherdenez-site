@@ -33,11 +33,36 @@ Estos ya están permitidos sin confirmación en `.claude/settings.local.json`.
 
 ## Flujo de ramas
 
-- `dev` es preprod y la rama de trabajo permanente. Vercel publica un preview de cada push a `dev`.
-- Los agentes hacen commit y push solo en `dev`, firmados como Daniel Herdenez <edherdenez@gmail.com>, sin Co-Authored-By, sin "Generated with" y sin ninguna atribución a IA.
-- Nunca commit ni push a `main`. Nunca force-push, rebase, `--no-verify` ni tags.
-- Daniel abre el PR de `dev` a `main` y hace el merge.
-- Después de cada merge, sincronizar `main` hacia `dev` con fast-forward (`git checkout dev && git pull --ff-only origin main`).
+`dev` es preprod y la rama de trabajo permanente; Vercel publica un preview de cada push a `dev`. `main` es producción y solo cambia por un PR mergeado por Daniel.
+
+1. **Escribe** Claude Code: commits en `dev`, firmados como Daniel Herdenez <edherdenez@gmail.com>, sin Co-Authored-By, sin "Generated with" y sin ninguna atribución a IA. Mensajes convencionales: `tipo: resumen en minúsculas e imperativo` + cuerpo (qué y por qué).
+2. **Revisión cruzada:** Codex revisa el diff en una sesión limpia (sin el razonamiento del escritor). Si es al revés (Codex escribe), Claude Code revisa.
+3. **PR por el agente:** el agente puede abrir el PR `dev` → `main` (`gh pr create --base main --head dev`). Nunca lo mergea.
+4. **Auditoría del PR:** Codex audita el PR.
+5. **QA final:** Antigravity hace QA sobre el preview de Vercel del PR.
+6. **Merge:** solo Daniel, en la UI de GitHub, con el check `ci` en verde.
+7. **Sync:** después de cada merge, `main` vuelve a `dev` con fast-forward, estando en `dev`: `git pull --ff-only origin main` y luego `git push origin dev`.
+
+Nunca: commit o push a `main`, force-push, rebase, `reset --hard`, `--no-verify`, cambiar `core.hooksPath`, borrar o renombrar `dev`/`main`, crear/mover/borrar tags, `gh pr merge`.
+
+## Guardrails de git
+
+Varias líneas; cada una cubre lo que la otra no ve:
+
+- **Hooks de git versionados** en `.githooks/` (aplican a cualquier agente y a la terminal: Claude Code, Codex, Daniel):
+  - `pre-commit`: rechaza commits en `main`/`master` y autor o committer distinto de Daniel Herdenez <edherdenez@gmail.com>.
+  - `commit-msg`: rechaza Co-Authored-By, "Generated with", Claude-Session/Codex-Session/Assisted-by, Signed-off-by de una herramienta y direcciones noreply de una IA; exige el formato convencional y un cuerpo.
+  - `pre-push`: solo deja empujar a `dev` o `experiment/*`; rechaza `main`, tags, borrar ramas o tags y cualquier push que no sea fast-forward.
+  - **Activarlos una vez por clon** (un clon nuevo no los trae activos): `git config core.hooksPath .githooks`. Comprobar con `git config --get core.hooksPath` (debe decir `.githooks`). Los agentes no cambian este valor; lo hace Daniel.
+  - `.gitattributes` fuerza LF en `.githooks/*`: con `core.autocrlf=true` un hook con CRLF no corre en Windows.
+- **Claude Code:** `.claude/settings.json` cablea `.claude/hooks/git_guard.py` (portado de PitchCraft) como PreToolUse en Bash y PowerShell, más reglas `deny` como primera capa. El guard lee git y `gh` también detrás de envoltorios (`bash -c`, `powershell -Command`, `cmd /c`, `eval`, `python -c`, `Invoke-Expression`, nombres armados en tiempo de ejecución) y los bloquea si no los puede leer: correr git directo. Tests: `python -m pytest .claude/hooks -q`.
+- **Codex** sigue estas mismas reglas por este archivo; los hooks de git lo frenan igual que a Claude Code.
+- **GitHub:** rulesets en `main` y `dev` y el check requerido `ci` (`.github/workflows/ci.yml`) son la línea del servidor. Qué configurar: `docs/runs/2026-11-21-A-git-guardrails.md`.
+
+## Estado del proyecto
+
+- `docs/BACKLOG.md`: las unidades de trabajo (A, B, C...) y su estado. Leerlo al empezar una sesión.
+- `docs/runs/`: un reporte por unidad terminada (qué cambió, cómo se verificó, qué quedó pendiente). El estado vive en estos archivos, no en el contexto de la sesión.
 
 ## Dos Playwright distintos — no confundir
 

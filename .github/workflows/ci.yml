@@ -1,0 +1,70 @@
+name: ci
+
+# One job named `ci`: its name is stable because the rulesets on main require it as a status check.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24 # Vercel builds this project with Node 24.x
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build
+        run: npm run build
+
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+
+      # Playwright runs against the production build. playwright.config.ts reuses a server already on :3000
+      # (reuseExistingServer: true), so starting `next start` first keeps it from launching `npm run dev`.
+      - name: Start next start
+        run: |
+          npx next start -p 3000 > next-start.log 2>&1 &
+          for i in $(seq 1 60); do
+            if curl -sf -o /dev/null http://localhost:3000; then echo "server up after ${i}s"; exit 0; fi
+            sleep 1
+          done
+          echo "next start did not answer on :3000 within 60s" >&2
+          cat next-start.log >&2
+          exit 1
+
+      - name: Playwright (chromium)
+        run: npx playwright test
+
+      - name: Upload Playwright results on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-results
+          path: |
+            test-results/
+            next-start.log
+          retention-days: 7
+          if-no-files-found: ignore
