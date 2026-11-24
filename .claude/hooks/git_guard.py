@@ -17,16 +17,26 @@ It blocks:
   - deleting or renaming `dev` or `main` (`git branch -d/-D/-m`);
   - changing a remote (`git remote add`, `set-url`, `remove`, `rename`, ...);
   - `commit --amend` when HEAD is already on a remote;
-  - a commit whose author or committer is not Daniel Herdenez <edherdenez@gmail.com>, and a change of that identity;
-  - changing `core.hooksPath` (reading it, `git config --get core.hooksPath`, is allowed), in the current `git config
-    set|unset|edit|remove-section` syntax and the legacy one, through `-c` or `--config-env`, or through an `include.path`;
-  - a mutating git command in a checkout the guard cannot name (`git -C $x`, `cd $x`, `cd -`, `popd`). The branch, config and
-    tags are read in the checkout the command runs in: the session's `cwd` from the hook input, then each `cd`, `-C`,
-    `--git-dir`, `--work-tree`, `GIT_DIR` and `GIT_WORK_TREE`;
+  - a commit whose author or committer is not the owner (GIT_AUTHOR_*/GIT_COMMITTER_*, author.*/committer.*, user.*), and
+    `-c` or `--config-env` of any identity key;
+  - every git config write, in any spelling (round 2, fail closed): `git config` passes only as a read, with a read verb
+    or action and every other option an exact name from CONFIG_READ_OPTIONS. Abbreviations (`--remove-s`), `set`, `unset`,
+    `edit`, sections, any scope: blocked. Agents never write git config; Daniel does it by hand. `-c core.hooksPath`,
+    `-c include.path` and GIT_CONFIG_* naming hooksPath are blocked on any command;
+  - a git write (anything but a read: commit, merge, push, pull, tag, branch -d, reset, an alias...) whose checkout and branch
+    the guard cannot be sure of (round 2, fail closed): inside a command substitution, on a line with a pipe, a subshell or
+    a block, after a cd/pushd/popd/Set-Location, an export or `$env:` assignment, `source`, an alias or a function on the
+    same line, in a checkout named at run time (`-C $x`), with a ref built at run time (`git push origin $b`), with an
+    environment variable or `-c` key outside a short list, or with a subcommand the guard does not know (an alias). The
+    checkout is the session's `cwd` from the hook input plus the command's own literal `-C`, `--git-dir`, `--work-tree`,
+    `GIT_DIR`, `GIT_WORK_TREE`. A commit or merge on a detached HEAD is blocked too;
+  - a command line the guard cannot follow when it mentions git: a quote, bracket or here-document left open, or a
+    here-document or here-string whose body the shell expands;
   - git behind a wrapper that carries a string the parser cannot see into (`bash -c`, `sh -c`, `eval`,
-    `powershell`/`pwsh -Command`, `cmd /c`, `python -c`, `node -e`, `Invoke-Expression`, ...) whenever the string
-    mentions git, and git behind a program name built at run time (`x=git; $x push ...`). The session runs git
-    directly instead, where the rules above can read it.
+    `powershell`/`pwsh -Command`, `cmd /c`, `python -c`, `node -e`, `Invoke-Expression`, `xargs`, `trap`, ...) whenever the
+    string mentions git, git behind a runner's own arguments (`timeout 5 git`, `env -u X git`), a shell or interpreter
+    reading its commands from stdin on a line that mentions git (`echo "git push" | bash`, `bash <<EOF`), and git behind a
+    program name built at run time (`x=git; $x push ...`). The session runs git directly instead, where the rules can read it.
 
 It also blocks every write through `gh` and to the GitHub API: `gh api` with any method but GET (`-X`/`--method`), with
 `-f`, `-F`, `--field`, `--raw-field` unless the method is an explicit GET, with `--input`, or on `graphql`; every `gh`
@@ -38,10 +48,9 @@ uploads.github.com with a non-GET method, a body or credentials. `gh` and the AP
 
 Git options are read the way git reads them: combined short flags (`-fu`) and unambiguous abbreviations (`--forc`).
 
-What it does not see: a script file or a program that runs git or gh on its own, a function or alias a shell
-defines, a gh alias already stored in the owner's gh config, a git alias that runs gh, a request whose URL or method is
-built at run time, git or gh inside a PowerShell script block or parentheses, behind a prefix that takes its own
-arguments (`timeout 5 gh ...`, `env -u X gh ...`), and any other tool. The git hooks in `.githooks/` and the GitHub
+What it does not see: a script file or a program that runs git or gh on its own, a function or alias defined in an earlier
+call or in the shell profile, a gh alias already stored in the owner's gh config, a request whose URL or method is built at
+run time, and any other tool. The git hooks in `.githooks/` and the GitHub
 rulesets on `main` and `dev` are the other lines for those cases.
 
 The decision is `decide(command, git)`; `git(*args)` runs git and returns its output (the tests pass a fake).
@@ -73,10 +82,45 @@ READ_ONLY = {
 }
 # Subcommands that create commits (their identity must be the owner's).
 COMMITTING = {"commit", "merge", "revert", "cherry-pick", "am"}
-CONFIG_WRITING_FLAGS = {"--unset", "--unset-all", "--add", "--replace-all", "-e", "--edit", "--rename-section", "--remove-section"}
-CONFIG_READING_FLAGS = {"--get", "--get-all", "--get-regexp", "--get-urlmatch", "-l", "--list", "--get-color", "--get-colorbool"}
+# `git config` passes only as a read: a read verb or a read action, and every other option an exact name from this list (no
+# abbreviation: `--remove-s` is not on it). Everything else is a write, whatever its spelling; agents never write git config.
+CONFIG_READ_VERBS = {"get", "list", "get-color", "get-colorbool"}
+CONFIG_READ_ACTIONS = {"--get", "--get-all", "--get-regexp", "--get-urlmatch", "-l", "--list", "--get-color", "--get-colorbool"}
+CONFIG_READ_OPTIONS = {
+    "--global", "--system", "--local", "--worktree", "-f", "--file", "--blob", "--type", "--no-type", "--bool", "--int",
+    "--bool-or-int", "--path", "--expiry-date", "-z", "--null", "--name-only", "--show-origin", "--show-scope", "--includes",
+    "--no-includes", "--default", "--all", "--regexp", "--value", "--fixed-value", "--url", "--show-names", "--no-show-names",
+}
 CONFIG_VERBS = {"get", "set", "unset", "list", "edit", "rename-section", "remove-section", "get-color", "get-colorbool"}
 CONFIG_VALUE_OPTIONS = {"-f", "--file", "--blob", "--type", "--default", "--value", "--url", "--comment"}
+# `-c` and `--config-env` keys that set who a commit is from
+IDENTITY_KEYS = {"user.name", "user.email", "author.name", "author.email", "committer.name", "committer.email"}
+# the `-c` keys a git write may carry: display settings; any other key could change what the write does
+WRITE_CONFIG_ALLOWED = ("color.", "pager.", "advice.", "i18n.", "core.pager", "core.quotepath", "core.editor")
+# the environment variables a git write may carry; any other (GIT_CONFIG_*, GIT_INDEX_FILE, HOME, ...) could change what it reads
+WRITE_ENV_ALLOWED = {
+    "GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_AUTHOR_DATE", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL", "GIT_COMMITTER_DATE",
+    "GIT_EDITOR", "GIT_SEQUENCE_EDITOR", "GIT_PAGER", "PAGER", "GIT_TERMINAL_PROMPT", "GIT_DIR", "GIT_WORK_TREE", "LANG",
+    "LC_ALL", "TZ",
+}
+# every git subcommand the guard knows; another word is an alias or an external command, which the guard cannot read
+GIT_SUBCOMMANDS = READ_ONLY | {
+    "commit", "merge", "revert", "cherry-pick", "am", "push", "pull", "fetch", "checkout", "switch", "branch", "tag", "reset",
+    "restore", "rm", "mv", "clean", "worktree", "init", "clone", "notes", "submodule", "update-ref", "symbolic-ref", "apply",
+    "gc", "prune", "repack", "maintenance", "sparse-checkout", "bisect", "fsck", "reflog", "replace", "format-patch", "archive",
+    "bundle", "mergetool", "difftool", "rebase", "replay", "filter-branch", "filter-repo", "update-index", "read-tree",
+    "write-tree", "commit-tree", "hash-object", "mktag", "mktree", "rerere", "verify-commit", "verify-tag", "check-attr",
+    "check-ref-format", "check-mailmap", "column", "request-pull", "annotate", "show-branch", "cherry", "pack-refs", "var",
+    "interpret-trailers", "fast-export", "fast-import", "multi-pack-index", "commit-graph", "hook", "refs", "backfill",
+    "credential", "bugreport", "diagnose", "send-email", "stripspace",
+}
+# `git branch` lists (and writes nothing) when every option is one of these and it names no branch, or it says it lists
+BRANCH_LISTING_FLAGS = {
+    "--show-current", "-r", "--remotes", "-a", "--all", "-l", "--list", "-v", "-vv", "--verbose", "--contains", "--no-contains",
+    "--merged", "--no-merged", "--points-at", "--format", "--sort", "--color", "--no-color", "--column", "--no-column", "-i",
+    "--ignore-case", "--abbrev", "--no-abbrev", "-q", "--quiet", "--omit-empty",
+}
+BRANCH_LISTING_MARKERS = {"-l", "--list", "--show-current", "--contains", "--no-contains", "--merged", "--no-merged", "--points-at"}
 REMOTE_CHANGING = {"add", "set-url", "remove", "rm", "rename", "set-head", "set-branches", "prune"}
 BRANCH_REMOVING_FLAGS = {"-d", "-D", "--delete", "-m", "-M", "--move"}
 PUSH_OPTIONS_WITH_VALUE ={"-o", "--push-option", "--repo", "--receive-pack", "--exec"}
@@ -95,31 +139,205 @@ def run_git(*args: str) -> str:
 # --- reading the command -------------------------------------------------------------------------------------
 
 
-def strip_heredocs(command: str) -> str:
-    """Drop the body of every here-document: it is text for a program (a commit message), not a command."""
+SUBSTITUTION = "$SUB"  # what a substitution leaves in the line; it starts with `$`, so a path or a word holding it is "built at run time"
+HEREDOC = re.compile(r"<<(-?)[ \t]*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\2")
 
-    lines, out, terminator = command.split("\n"), [], None
-    for line in lines:
-        if terminator is not None:
-            if line.strip() == terminator or (terminator in ("'@", '"@') and line.startswith(terminator)):
-                terminator = None
+
+class Shape:
+    """A command line as the shell groups it: the top-level code, the code of each substitution, and what makes it hard to follow."""
+
+    def __init__(self) -> None:
+        self.text = ""  # the top-level code: here-document bodies dropped, newlines inside quotes folded, substitutions as $SUB
+        self.substitutions: list[str] = []  # the code inside each `$(...)`, backticks, `<(...)`, `>(...)`, `@(...)`
+        self.pipe = False  # `a | b`: each side runs in its own process
+        self.group = False  # `( ... )` or `{ ... }`: a subshell, a block, a script block, a function body
+        self.unbalanced = False  # a quote, bracket, substitution or here-document left open
+        self.opaque = False  # a here-document or here-string whose body the shell expands (`$(...)` or backticks in it)
+
+
+def _skip_heredoc_bodies(command: str, index: int, heredocs: list[tuple[str, bool, bool]], result: Shape) -> int:
+    for terminator, expands, dash in heredocs:
+        while True:
+            if index >= len(command):
+                result.unbalanced = True
+                return len(command)
+            end = command.find("\n", index)
+            end = len(command) if end < 0 else end
+            line = command[index:end].rstrip("\r")
+            index = end + 1
+            if (line.lstrip("\t") if dash else line) == terminator:
+                break
+            if expands and re.search(r"\$\(|`", line):
+                result.opaque = True
+    return min(index, len(command))
+
+
+def _skip_here_string(command: str, index: int, result: Shape) -> int:
+    """A PowerShell here-string, `@'` or `@"` at the end of a line, up to the line that starts with `'@` or `"@`."""
+
+    quote = command[index + 1]
+    position = command.find("\n", index)
+    while position >= 0:
+        start = position + 1
+        end = command.find("\n", start)
+        line = command[start : len(command) if end < 0 else end]
+        if line.startswith(quote + "@"):
+            return start + 2
+        if quote == '"' and re.search(r"\$\(", line):
+            result.opaque = True
+        position = end
+    result.unbalanced = True
+    return len(command)
+
+
+def shape(command: str) -> Shape:
+    """
+    Read the command line the way the shell groups it: quotes, substitutions, subshells, blocks, pipes and here-documents.
+    Text inside quotes stays one word even across lines; a here-document body is dropped (it is text for a program, such as
+    a commit message); the code inside a substitution is set aside and read on its own.
+    """
+
+    result = Shape()
+    buffer: list[str] = []
+    stack: list[tuple[str, list[str] | None]] = []  # open contexts, innermost last: (kind, the buffer a substitution returns to)
+    heredocs: list[tuple[str, bool, bool]] = []  # the here-documents opened on the current line: (terminator, expanded, `<<-`)
+    index, length = 0, len(command)
+
+    def inside_substitution() -> bool:
+        return any(kind in ("$(", "`") for kind, _ in stack)
+
+    def open_substitution(kind: str) -> None:
+        nonlocal buffer
+        stack.append((kind, buffer))
+        buffer = []
+
+    def close_substitution() -> None:
+        nonlocal buffer
+        _, parent = stack.pop()
+        result.substitutions.append("".join(buffer))
+        buffer = parent if parent is not None else []
+        buffer.append(SUBSTITUTION)
+
+    while index < length:
+        char, pair = command[index], command[index : index + 2]
+        kind = stack[-1][0] if stack else ""
+        if pair == "\\\n" and kind != "'":  # a line continuation
+            buffer.append(" ")
+            index += 2
             continue
-        out.append(line)
-        match = re.search(r"(?<!<)<<(?!<)-?\s*(['\"]?)([A-Za-z_][A-Za-z0-9_]*)\1", line)
-        if match:
-            terminator = match.group(2)
-        elif re.search(r"@['\"]\s*$", line):  # a PowerShell here-string: `@'` ... `'@`
-            terminator = line.rstrip()[-1] + "@"
-    return "\n".join(out)
+        if char == "\n":
+            buffer.append(" " if kind in ("'", '"') else "\n")
+            index += 1
+            if heredocs:
+                index = _skip_heredoc_bodies(command, index, heredocs, result)
+                heredocs = []
+            continue
+        if kind == "'":
+            buffer.append(char)
+            if char == "'":
+                stack.pop()
+            index += 1
+            continue
+        if kind == '"':
+            if char == "\\" and index + 1 < length:
+                buffer.append(pair)
+                index += 2
+            elif char == '"':
+                buffer.append(char)
+                stack.pop()
+                index += 1
+            elif pair == "$(":
+                open_substitution("$(")
+                index += 2
+            elif char == "`":
+                open_substitution("`")
+                index += 1
+            else:
+                buffer.append(char)
+                index += 1
+            continue
+        # code: the top level, a group, the inside of a substitution
+        if char == "\\" and index + 1 < length:
+            buffer.append(pair)
+            index += 2
+        elif char == "#" and (index == 0 or command[index - 1] in " \t\n;&|({"):  # a comment, to the end of the line
+            end = command.find("\n", index)
+            index = length if end < 0 else end
+        elif char in "'\"":
+            stack.append((char, None))
+            buffer.append(char)
+            index += 1
+        elif pair in ("$(", "@(", "<(", ">("):
+            open_substitution("$(")
+            index += 2
+        elif char == "`":
+            if kind == "`":
+                close_substitution()
+            else:
+                open_substitution("`")
+            index += 1
+        elif pair == "${":  # a variable, `${name}` or `${env:NAME}`
+            end = command.find("}", index)
+            end = length - 1 if end < 0 else end
+            buffer.append(command[index : end + 1])
+            index = end + 1
+        elif char in "({":
+            stack.append((char, None))
+            buffer.append(char)
+            if not inside_substitution():
+                result.group = True
+            index += 1
+        elif char in ")}":
+            if kind == ("(" if char == ")" else "{"):
+                stack.pop()
+                buffer.append(char)
+            elif char == ")" and kind == "$(":
+                close_substitution()
+            else:
+                result.unbalanced = True
+                buffer.append(char)
+            index += 1
+        elif char == "|":
+            if pair == "||":
+                buffer.append(pair)
+                index += 2
+                continue
+            if not inside_substitution():
+                result.pipe = True
+            buffer.append(char)
+            index += 1
+        elif command.startswith("<<<", index):  # a here-string: one word, not a here-document
+            buffer.append("<<<")
+            index += 3
+        elif pair == "<<" and HEREDOC.match(command, index):
+            match = HEREDOC.match(command, index)
+            heredocs.append((match.group(3), not match.group(2), bool(match.group(1))))
+            buffer.append("<HEREDOC")  # a redirection: the splitter drops it, and reading a substitution does not reopen it
+            index = match.end()
+        elif pair in ("@'", '@"') and not command[index + 2 :].split("\n", 1)[0].strip():
+            index = _skip_here_string(command, index, result)
+            buffer.append("''")
+        else:
+            buffer.append(char)
+            index += 1
+    if stack or heredocs:
+        result.unbalanced = True
+    while stack:  # a substitution left open is still read
+        if stack[-1][0] in ("$(", "`"):
+            close_substitution()
+        else:
+            stack.pop()
+    result.text = "".join(buffer)
+    return result
 
 
-def segments(command: str) -> list[list[str]]:
-    """The simple commands of a command line, as token lists (split on ; && || | and newlines, outside quotes)."""
+def _split(text: str, punctuation: str = ";&|") -> list[list[str]]:
+    """The simple commands of shaped text, as token lists (split on the punctuation and on newlines, outside quotes)."""
 
     commands: list[list[str]] = []
-    for line in strip_heredocs(command).split("\n"):
+    for line in text.split("\n"):
         try:
-            lexer = shlex.shlex(line, posix=True, punctuation_chars=";&|")
+            lexer = shlex.shlex(line, posix=True, punctuation_chars=punctuation)
             lexer.whitespace_split = True
             tokens = list(lexer)
         except ValueError:
@@ -127,7 +345,7 @@ def segments(command: str) -> list[list[str]]:
         current: list[str] = []
         skip_target = False
         for token in tokens:
-            if token and set(token) <= set(";&|"):
+            if token and set(token) <= set(punctuation):
                 if current:
                     commands.append(current)
                 current = []
@@ -141,6 +359,12 @@ def segments(command: str) -> list[list[str]]:
         if current:
             commands.append(current)
     return commands
+
+
+def segments(command: str) -> list[list[str]]:
+    """The simple commands of the top level of a command line (the code of a substitution is read on its own)."""
+
+    return _split(shape(command).text)
 
 
 # Long options the rules below look for. Git accepts any unambiguous abbreviation (`--forc`, `--no-ver`, `--amen`), so an
@@ -282,21 +506,6 @@ def _current_branch(git: GitRunner) -> str:
         return ""
 
 
-def _config_value(inv: Invocation, git: GitRunner, key: str, env_name: str | None = None) -> str | None:
-    """The value git would use: the command's `-c`, the environment of the command, the process environment, the config."""
-
-    if key in inv.config:
-        return inv.config[key]
-    if env_name and env_name in inv.env:
-        return inv.env[env_name]
-    if env_name and os.environ.get(env_name):
-        return os.environ[env_name]
-    try:
-        return git("config", key) or None
-    except Exception:  # noqa: BLE001
-        return None
-
-
 def _push_problem(inv: Invocation, git: GitRunner) -> str | None:
     flags = inv.flags()
     for flag in flags:
@@ -334,12 +543,27 @@ def _push_problem(inv: Invocation, git: GitRunner) -> str | None:
     return None
 
 
+def _identity_value(inv: Invocation, git: GitRunner, role: str, field: str) -> str | None:
+    """The name or email git would use for the author or committer: GIT_<ROLE>_<FIELD>, then <role>.<field>, then user.<field>."""
+
+    variable = f"GIT_{role.upper()}_{field.upper()}"
+    if variable in inv.env:
+        return inv.env[variable]
+    if os.environ.get(variable):
+        return os.environ[variable]
+    for key in (f"{role}.{field}", f"user.{field}"):
+        try:
+            value = git("config", key)
+        except Exception:  # noqa: BLE001 - the key is not set
+            continue
+        if value:
+            return value
+    return None
+
+
 def _identity_problem(inv: Invocation, git: GitRunner) -> str | None:
     values = {
-        "author name": _config_value(inv, git, "user.name", "GIT_AUTHOR_NAME"),
-        "author email": _config_value(inv, git, "user.email", "GIT_AUTHOR_EMAIL"),
-        "committer name": _config_value(inv, git, "user.name", "GIT_COMMITTER_NAME"),
-        "committer email": _config_value(inv, git, "user.email", "GIT_COMMITTER_EMAIL"),
+        f"{role} {field}": _identity_value(inv, git, role, field) for role in ("author", "committer") for field in ("name", "email")
     }
     for index, arg in enumerate(inv.args):  # --author="Name <email>"
         given = arg.split("=", 1)[1] if arg.startswith("--author=") else inv.args[index + 1] if arg == "--author" and index + 1 < len(inv.args) else None
@@ -376,11 +600,16 @@ def _problem(inv: Invocation, git: GitRunner) -> str | None:
         return "overriding core.hooksPath skips the hooks (AGENTS.md)"
     if any(_guarded_key(key) for key in inv.config):  # `-c include.path=...`
         return next(_guarded_key(key) for key in inv.config if _guarded_key(key))
+    for key in inv.config:
+        if key in IDENTITY_KEYS:
+            return f"-c {key} overrides the identity on the command line; commits are made as {OWNER_NAME} <{OWNER_EMAIL}> from the config Daniel set (AGENTS.md)"
     pull_rebase = sub == "pull" and any(re.fullmatch(r"-[a-zA-Z]*r[a-zA-Z]*", f) for f in flags)
     if sub == "rebase" or pull_rebase or any(a == "--rebase" or (a.startswith("--rebase=") and a != "--rebase=false") for a in args):
         return "rebase rewrites history and is never allowed (AGENTS.md)"
-    if sub in ("filter-branch", "filter-repo"):
+    if sub in ("filter-branch", "filter-repo", "replay"):
         return f"git {sub} rewrites history and is never allowed (AGENTS.md)"
+    if sub not in GIT_SUBCOMMANDS:
+        return f"git {sub} is not a git command the guard knows (an alias, an external command or a name built at run time): run the git command itself (AGENTS.md)"
     if sub == "reset" and "--hard" in args:
         return "reset --hard is never allowed (AGENTS.md)"
 
@@ -442,6 +671,8 @@ def _problem(inv: Invocation, git: GitRunner) -> str | None:
             branch = git("branch", "--show-current")
         except Exception:  # noqa: BLE001 - the branch of the target checkout cannot be read: fail closed
             return "the current branch of the target checkout cannot be read, so the commit is not allowed (AGENTS.md)"
+        if not branch:
+            return f"HEAD is detached in the target checkout: git {sub} runs on a named branch, dev (AGENTS.md)"
         if _is_protected(branch):
             return f"the current branch is {branch!r}: nothing is committed or merged there (AGENTS.md)"
     return None
@@ -458,41 +689,29 @@ def _guarded_key(key: str) -> str | None:
     return None
 
 
+CONFIG_WRITE = (
+    "agents never write git config (Daniel changes it by hand): this `git config` is not a read the guard knows. Reads pass: "
+    "`git config get <key>`, `git config --get <key>`, `git config --list` (AGENTS.md)"
+)
+
+
 def _config_problem(inv: Invocation) -> str | None:
     """
-    `git config` in both syntaxes: the current one, with a verb first (`git config set|unset|get|list|edit|rename-section|
-    remove-section ...`), and the legacy one (`git config [--unset|--add|...] <key> [<value>]`). The options that take a value
-    (`--file x`, `--type path`, `--comment note`) are skipped, so their value is never read as the key.
+    `git config` passes only when it is a read, in either syntax: a read verb (`get`, `list`) or a read action (`--get`,
+    `--get-all`, `--get-regexp`, `--list`, ...) or the legacy `git config <key>`, with every other option an exact name from
+    CONFIG_READ_OPTIONS. Any other spelling, an abbreviation included (`--remove-s`, `--unset-a`), is blocked as a write.
     """
 
-    flags = inv.flags()
+    names = [flag.partition("=")[0] for flag in inv.flags()]
+    if any(name not in CONFIG_READ_ACTIONS | CONFIG_READ_OPTIONS for name in names):
+        return CONFIG_WRITE
     positional = inv.positional(CONFIG_VALUE_OPTIONS)
-    verb = positional[0] if positional and positional[0] in CONFIG_VERBS else None
-    rest = positional[1:] if verb else positional
-    if verb == "edit" or {"-e", "--edit"} & set(flags):
-        return "git config edit opens the whole file, core.hooksPath and the identity included: it is not allowed (AGENTS.md)"
-    if verb in ("rename-section", "remove-section") or {"--rename-section", "--remove-section"} & set(flags):
-        section = (rest[0] if rest else "").lower().split(".")[0]
-        if section in ("core", "user", "include") or section.startswith("includeif"):
-            return f"renaming or removing the [{section}] section changes core.hooksPath or the identity: it is not allowed (AGENTS.md)"
+    verb = positional[0] if positional else ""
+    if verb in CONFIG_READ_VERBS:
         return None
-    unsetting = verb == "unset" or bool({"--unset", "--unset-all"} & set(flags))
-    if verb:
-        writing = verb in ("set", "unset")
-    else:
-        reading = bool(CONFIG_READING_FLAGS & set(flags))
-        writing = unsetting or bool(CONFIG_WRITING_FLAGS & set(flags)) or (len(rest) >= 2 and not reading)
-    if not writing or not rest:
-        return None  # `git config core.hooksPath`, `git config get core.hooksPath`: reading it is the documented check
-    key = rest[0].lower()
-    guarded = _guarded_key(key)
-    if guarded:
-        return guarded
-    if key in ("user.name", "user.email"):
-        expected = OWNER_NAME if key == "user.name" else OWNER_EMAIL
-        if unsetting or len(rest) < 2 or rest[1] != expected:
-            return f"the git identity is {OWNER_NAME} <{OWNER_EMAIL}> and is not changed (AGENTS.md)"
-    return None
+    if verb not in CONFIG_VERBS and (CONFIG_READ_ACTIONS & set(names) or len(positional) <= 1):
+        return None  # `git config --get core.hooksPath`, `git config core.hooksPath`: the documented check
+    return CONFIG_WRITE
 
 
 def _is_main_sync(inv: Invocation, git: GitRunner) -> bool:
@@ -521,7 +740,8 @@ def positional_and_refs(inv: Invocation) -> list[str]:
         if skip:
             skip = False
             continue
-        if arg in VALUE_OPTIONS and inv.sub in MESSAGE_SUBCOMMANDS:  # `-c` and `-m` name a branch for switch, checkout, branch, reset
+        # `-c` and `-m` name a branch for switch, checkout, branch, reset; `-am` ends with the option that takes the message
+        if inv.sub in MESSAGE_SUBCOMMANDS and (arg in VALUE_OPTIONS or re.fullmatch(r"-[a-zA-Z]*[mFCc]", arg)):
             skip = True
             continue
         if arg.startswith("-") and arg != "-":
@@ -739,7 +959,16 @@ def _github_request_problem(tokens: list[str], command: str) -> str | None:
 # --- git behind a wrapper ----------------------------------------------------------------------------------------
 
 # Words that only pass the command along: `env git push`, `& git push`, `{ git push }`, `time git push`.
-TRANSPARENT = {"env", "command", "exec", "nohup", "time", "sudo", "builtin", "nice", "&", "{", "}", "(", ")", "!", "then", "do", "else"}
+TRANSPARENT = {
+    "env", "command", "exec", "nohup", "time", "sudo", "builtin", "nice", "&", "{", "}", "(", ")", "!", "then", "do", "else",
+    "if", "elif", "while", "until",
+}
+# Programs that run the command after their own arguments (`timeout 5 git push`, `env -u X git push`): when the guard cannot
+# reach the git or gh behind them, it blocks the line.
+RUNNERS = {
+    "env", "sudo", "doas", "nice", "time", "timeout", "stdbuf", "ionice", "taskset", "chrt", "unbuffer", "nohup", "flock",
+    "script", "chronic", "exec", "command", "builtin",
+}
 MENTIONS_GIT = re.compile(r"(?<![A-Za-z0-9_])(?:git|gh)(?![A-Za-z0-9_])|(?:api|uploads)\.github\.com", re.IGNORECASE)  # git, gh or the GitHub API
 POSIX_SHELLS = {"bash", "sh", "zsh", "dash", "ksh", "fish", "csh", "tcsh", "busybox", "wsl"}
 POWERSHELLS = {"powershell", "pwsh", "powershell_ise"}
@@ -752,8 +981,10 @@ INTERPRETER_CODE_FLAGS = {
 # Programs that run what they are given whatever the flags: any mention of git in them is a wrapper.
 ALWAYS_WRAPPERS = {
     "eval", "iex", "invoke-expression", "invoke-command", "icm", "start-process", "saps", "start-job", "sajb",
-    "foreach-object", "foreach", "%", "where-object", "xargs", "ssh", "wsl", "watch",
+    "foreach-object", "foreach", "%", "where-object", "xargs", "ssh", "wsl", "watch", "trap",
 }
+# Programs that read commands from stdin when they get no script (`echo "git push" | bash`, `bash <<EOF`)
+STDIN_INTERPRETERS = POSIX_SHELLS | POWERSHELLS | {"cmd"} | set(INTERPRETER_CODE_FLAGS)
 
 
 def _strip_prefixes(tokens: list[str]) -> list[str]:
@@ -779,18 +1010,6 @@ def _strip_prefixes(tokens: list[str]) -> list[str]:
     return rest
 
 
-def _substitutions(tokens: list[str]) -> list[list[str]]:
-    """The commands inside `$(...)` and backticks of a segment, quoted or not: the shell runs them, so the guard reads them too."""
-
-    found: list[list[str]] = []
-    for index, token in enumerate(tokens):
-        for marker, closer in (("$(", ")"), ("`", "`")):
-            if marker in token:
-                text = " ".join([token.split(marker, 1)[1], *tokens[index + 1 :]]).split(closer)[0]
-                found.extend(segments(text))
-    return found
-
-
 def _wrapper_problem(tokens: list[str], command: str) -> str | None:
     """A program that carries a string the parser cannot read, with git in it; or a program name built at run time."""
 
@@ -801,7 +1020,10 @@ def _wrapper_problem(tokens: list[str], command: str) -> str | None:
         return None
     program, args = program_name(rest[0]), rest[1:]
     flags = [arg.lower() for arg in args]
-    carries_git = any(MENTIONS_GIT.search(arg) for arg in args)
+    # a substitution in the arguments (`bash -c "$(...)"`) carries whatever it prints: git, if the line mentions git anywhere
+    carries_git = any(MENTIONS_GIT.search(arg) for arg in args) or (
+        any(SUBSTITUTION in arg for arg in args) and bool(MENTIONS_GIT.search(command))
+    )
     wrapped = None
     if program in POSIX_SHELLS and carries_git and any(re.fullmatch(r"-[a-z]*c[a-z]*", flag) for flag in flags):
         wrapped = f"{program} -c"
@@ -825,84 +1047,171 @@ def _wrapper_problem(tokens: list[str], command: str) -> str | None:
     return None
 
 
-CHANGING_DIRECTORY = {"cd", "chdir", "set-location", "sl", "pushd", "push-location"}
-LEAVING_DIRECTORY = {"popd", "pop-location"}
-LOCATION_VALUE_OPTIONS = {"-path", "-literalpath", "-stackname"}
+# --- fail closed: a git write whose checkout and branch the guard cannot be sure of ---------------------------------------
+
+# Commands that change the directory, the environment or what a name runs, for the rest of the line
+STATE_PROGRAMS = {
+    "cd", "chdir", "set-location", "sl", "pushd", "push-location", "popd", "pop-location", "export", "declare", "typeset",
+    "unset", "setx", "source", ".", "alias", "unalias", "function", "set-alias", "sal", "new-alias", "nal", "shopt", "local",
+    "readonly", "hash", "enable",
+}
+# PowerShell item commands change the environment, an alias or a function when they name one of these drives
+ITEM_PROGRAMS = {
+    "set-item", "si", "new-item", "ni", "remove-item", "ri", "del", "erase", "rm", "clear-item", "cli", "copy-item", "cp",
+    "copy", "move-item", "mv", "move", "rename-item", "rni",
+}
+STATE_DRIVES = ("env:", "alias:", "function:")
+ENVIRONMENT_ASSIGNMENT = re.compile(r"\$\{?env:[A-Za-z_][A-Za-z0-9_]*\}?\s*[+]?=(?!=)|\[(?:system\.)?environment\]::setenvironmentvariable", re.IGNORECASE)
+ASSIGNMENT = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)=.*")
 
 
-def _directory_change(tokens: list[str]) -> tuple[str | None, bool] | None:
-    """
-    For `cd dir`, `Set-Location -Path dir`, `pushd dir`: (dir, True), with `~` expanded; (None, False) when the guard cannot
-    name the directory (`cd $x`, `cd -`, `popd`). None when the segment does not change directory.
-    """
+def _changes_state(tokens: list[str]) -> bool:
+    """Whether a segment changes the directory, the environment, an alias or a function for the commands after it."""
 
     rest = _strip_prefixes(tokens)
     if not rest:
-        return None
+        return False
     program = program_name(rest[0])
-    if program in LEAVING_DIRECTORY:
-        return None, False
-    if program not in CHANGING_DIRECTORY:
+    if program in STATE_PROGRAMS:
+        return True
+    if program in ITEM_PROGRAMS and any(arg.lower().lstrip("-").startswith(STATE_DRIVES) for arg in rest[1:]):
+        return True
+    if rest[0].lower().startswith(("$env:", "${env:", "[environment]::", "[system.environment]::")):
+        return True
+    # `GIT_DIR=x` or `HOME=x` on its own line: an exported name passes the new value to every later command
+    assignments = [ASSIGNMENT.fullmatch(token) for token in rest]
+    return all(assignments) and any(match.group(1).isupper() for match in assignments if match)
+
+
+def _is_write(inv: Invocation) -> bool:
+    """Whether a git command can create, move or delete a commit, a ref or a tag (or is a subcommand the guard does not know)."""
+
+    if inv.sub in READ_ONLY:
+        return False  # `git config` writes are blocked on their own, wherever they run
+    names = {flag.partition("=")[0] for flag in inv.flags()}
+    if inv.sub == "branch":
+        return not (names <= BRANCH_LISTING_FLAGS and (not inv.positional() or names & BRANCH_LISTING_MARKERS))
+    if inv.sub == "tag":
+        listing = {"-l", "--list", "--contains", "--no-contains", "--points-at", "--merged", "--no-merged"}
+        return not (names <= TAG_LISTING_FLAGS and (not inv.positional() or names & listing))
+    return True
+
+
+def _write_problem(inv: Invocation) -> str | None:
+    """What a git write may not carry: an unknown environment variable or `-c` key, or a ref built at run time."""
+
+    for name in inv.env:
+        if name not in WRITE_ENV_ALLOWED:
+            return f"{name}=... can change what git {inv.sub} reads, and the guard cannot follow it: run it without (AGENTS.md)"
+    for key in inv.config:
+        if not key.startswith(WRITE_CONFIG_ALLOWED):
+            return f"git -c {key} on a git {inv.sub} can change what it does, and the guard cannot follow it: run it without (AGENTS.md)"
+    for arg in positional_and_refs(inv):
+        if re.search(r"[$`]|%[A-Za-z_][A-Za-z0-9_]*%", arg):
+            return f"{arg!r} is built at run time: the guard cannot tell which ref git {inv.sub} acts on. Use the literal name (AGENTS.md)"
+    return None
+
+
+UNCLEAR = (
+    "the guard cannot follow this command line (a quote, bracket, substitution or here-document left open, or a here-document "
+    "whose body the shell expands): run git as a plain command (AGENTS.md)"
+)
+
+
+def _hidden_problem(tokens: list[str], command_tokens: list[str], command: str) -> str | None:
+    """git or gh the parser cannot reach: behind a runner's own arguments, or sent to a shell's stdin."""
+
+    words = [program_name(token) for token in tokens]
+    program = program_name(command_tokens[0])
+    if program not in ("git", "gh") and any(word in ("git", "gh") for word in words[1:]):
+        first = next(index for index, word in enumerate(words) if word in ("git", "gh"))
+        runner = next((word for word in words[:first] if word in RUNNERS), None)
+        if runner:
+            return f"git or gh behind {runner} cannot be read by the guard: run it directly (AGENTS.md)"
+    if program in STDIN_INTERPRETERS and MENTIONS_GIT.search(command):
+        args = command_tokens[1:]
+        if "-" in args or not [arg for arg in args if not arg.startswith(("-", "/"))]:
+            return f"{program} reads its commands from stdin here, and git in them cannot be read by the guard: run git directly (AGENTS.md)"
+    return None
+
+
+def _segment_problem(tokens: list[str], nested: bool, unclear: str | None, command: str, git: GitRunner) -> str | None:
+    """The reason one simple command is blocked, or None. `unclear` says why a git write on this line has no certain target."""
+
+    if _changes_state(tokens):
+        return None  # the change itself is allowed; it makes the git writes on the line uncertain (`unclear`)
+    wrapped = _wrapper_problem(tokens, command)
+    if wrapped:
+        return wrapped
+    command_tokens = _strip_prefixes(tokens)
+    while command_tokens and ASSIGNMENT.fullmatch(command_tokens[0]):
+        command_tokens = command_tokens[1:]
+    if command_tokens:
+        program = program_name(command_tokens[0])
+        problem = (
+            _gh_problem(command_tokens)
+            if program == "gh"
+            else _github_request_problem(command_tokens, command)
+            if program in WEB_REQUEST_PROGRAMS
+            else None
+        ) or _hidden_problem(tokens, command_tokens, command)
+        if problem:
+            return problem
+    inv = Invocation(_strip_prefixes(tokens))
+    if not inv.is_git or not inv.sub:
         return None
-    targets, skip = [], False
-    for arg in rest[1:]:
-        if skip:
-            targets.append(arg)
-            skip = False
-        elif arg.lower() in LOCATION_VALUE_OPTIONS:
-            skip = True
-        elif arg.startswith("-") and arg != "-":
-            continue  # `cd -P`, `Set-Location -PassThru`
-        else:
-            targets.append(arg)
-    target = targets[0] if targets else "~"
-    if target.startswith("~"):
-        target = os.path.expanduser(target)
-    return (target, True) if known_path(target) else (None, False)
+    writes = _is_write(inv)
+    if writes and not inv.location_known:
+        return "the guard cannot tell which checkout this git command runs in (a path built at run time): run it with a literal path (AGENTS.md)"
+    scoped = git if not inv.location else (lambda *args, _location=inv.location: git(*_location, *args))
+    problem = _problem(inv, scoped)
+    if problem or not writes:
+        return problem
+    where = "inside a command substitution" if nested else unclear
+    if where:
+        return (
+            f"the guard cannot tell which checkout and branch this git {inv.sub} acts on ({where}): run it as a plain command "
+            "of its own, with `git -C <literal path>` for another checkout (AGENTS.md)"
+        )
+    return _write_problem(inv)
 
 
 def decide(command: str, git: GitRunner = run_git) -> str | None:
-    """None if the command may run, else the reason it is blocked."""
+    """
+    None if the command may run, else the reason it is blocked.
 
-    directories: list[str] = []  # the `cd`s before this segment, as `-C` options: git composes them the way the shell would
-    directories_known = True
-    pending = segments(command)
-    while pending:
-        tokens = pending.pop(0)
-        pending.extend(_substitutions(tokens))
-        moved = _directory_change(tokens)
-        if moved is not None:
-            target, known = moved
-            if known:
-                directories.extend(["-C", target])
-            else:
-                directories_known = False
-            continue
-        wrapped = _wrapper_problem(tokens, command)
-        if wrapped:
-            return wrapped
-        command_tokens = _strip_prefixes(tokens)
-        while command_tokens and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", command_tokens[0]):
-            command_tokens = command_tokens[1:]
-        if command_tokens:
-            program = program_name(command_tokens[0])
-            github = (
-                _gh_problem(command_tokens)
-                if program == "gh"
-                else _github_request_problem(command_tokens, command)
-                if program in WEB_REQUEST_PROGRAMS
-                else None
-            )
-            if github:
-                return github
-        inv = Invocation(_strip_prefixes(tokens))
-        if not inv.is_git or not inv.sub:
-            continue
-        if not (directories_known and inv.location_known) and inv.sub not in READ_ONLY:
-            return "the guard cannot tell which checkout this git command runs in (a path built at run time, `cd -`, `popd`): run it with a literal path (AGENTS.md)"
-        location = [*directories, *inv.location]
-        scoped = git if not location else (lambda *args, _location=location: git(*_location, *args))
-        problem = _problem(inv, scoped)
+    The rules are checked on every simple command of the line, the ones inside substitutions included. A git write (commit,
+    merge, push, pull, tag, branch -d, reset, an unknown subcommand, ...) then passes only when its checkout and branch are
+    certain: it is not inside a substitution, the line has no pipe, subshell or block, and nothing on the line changes the
+    directory, the environment, an alias or a function. The checkout is the session's `cwd`, plus the command's own literal
+    `-C`, `--git-dir`, `--work-tree`, `GIT_DIR` and `GIT_WORK_TREE`.
+    """
+
+    top = shape(command)
+    shapes: list[tuple[Shape, bool]] = [(top, False)]
+    for found, _ in shapes:  # grows while it runs: each substitution, and the substitutions inside it
+        shapes.extend((shape(text), True) for text in found.substitutions)
+    mentions_git = bool(MENTIONS_GIT.search(command))
+    if mentions_git and any(found.unbalanced or found.opaque for found, _ in shapes):
+        return UNCLEAR
+    parts: list[tuple[list[str], bool]] = []
+    for found, nested in shapes:
+        # split twice: as the shell runs the line, and again at every bracket, so git at the start of a block
+        # (`if ($x) { git push }`) is read as a command too
+        for punctuation in (";&|", ";&|(){}"):
+            for tokens in _split(found.text, punctuation):
+                if (tokens, nested) not in parts:
+                    parts.append((tokens, nested))
+    texts = " ".join(found.text for found, _ in shapes)
+    moved = any(_changes_state(tokens) for tokens, _ in parts) or bool(ENVIRONMENT_ASSIGNMENT.search(texts))
+    unclear = (
+        "in a pipeline" if top.pipe
+        else "inside a subshell or a block" if top.group
+        else "after a cd, popd, alias or environment change on the same line" if moved
+        else None
+    )
+    for tokens, nested in parts:
+        problem = _segment_problem(tokens, nested, unclear, command, git)
         if problem:
             return problem
     return None

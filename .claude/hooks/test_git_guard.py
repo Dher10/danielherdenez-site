@@ -91,8 +91,6 @@ ALLOWED = [
     "git tag -l 'v1*'",
     "git remote -v",
     "git config user.name",
-    "git config user.email edherdenez@gmail.com",
-    "git config user.name 'Daniel Herdenez'",
     "git stash push -q -- components/StarterCard.tsx",
     "git stash pop -q",
     "git fetch",
@@ -102,13 +100,11 @@ ALLOWED = [
     "git rev-parse HEAD",
     "git -C . log -1",
     "git commit -q -F - <<'EOF'\nfeat: say it in the body\n\nA line about main, git push --force and rebase that is only text.\nEOF",
-    # redirections are not arguments (the first of these blocked the session's own push)
-    "git push origin dev 2>&1 | tail -1",
+    # redirections are not arguments (a git write in a pipeline is blocked since round 2: see the end of the file)
     "git push origin dev > out.txt",
     "git push origin dev >out.txt 2>&1",
     "git push origin dev &>/dev/null",
     "git log --oneline -3 2>/dev/null",
-    "git commit -q -m 'feat: x' 2>&1 | tail -2",
     "git status --short 1>/dev/null",
     "cat file.txt | grep main",
     "python -m pytest -q",
@@ -156,7 +152,7 @@ BLOCKED = [
     ("git commit -nm 'feat: x'", "--no-verify"),
     ("git push --no-verify origin dev", "--no-verify"),
     ("git -c core.hooksPath=/dev/null commit -m 'feat: x'", "hooksPath"),
-    ("git config core.hooksPath /tmp/none", "hooksPath"),
+    ("git config core.hooksPath /tmp/none", "never write git config"),
     # main and tags
     ("git checkout main", "release branch"),
     ("git switch main", "release branch"),
@@ -192,7 +188,7 @@ def test_the_dangerous_commands_are_blocked_with_a_reason(command, why):
 def test_a_command_chain_is_blocked_if_any_part_of_it_is():
     assert verdict("git add -A && git commit -q -m 'feat: x' && git push --force origin dev") is not None
     assert verdict("npm test; git push origin main") is not None
-    assert verdict("git push origin dev | cat") is None
+    assert "in a pipeline" in verdict("git push origin dev | cat")  # round 2: a git write in a pipeline fails closed
 
 
 def test_a_here_string_does_not_hide_the_commands_after_it():
@@ -256,14 +252,13 @@ def test_a_commit_that_is_not_the_owners_is_blocked(command, config):
 
 
 def test_the_owners_identity_passes_however_it_is_given():
-    assert verdict("git -c user.name='Daniel Herdenez' -c user.email=edherdenez@gmail.com commit -m 'feat: x'") is None
     assert verdict("GIT_AUTHOR_NAME='Daniel Herdenez' GIT_AUTHOR_EMAIL=edherdenez@gmail.com git commit -m 'feat: x'") is None
     assert verdict("git commit --author='Daniel Herdenez <edherdenez@gmail.com>' -m 'feat: x'") is None
 
 
 def test_the_identity_of_the_repository_is_not_changed():
-    assert "not changed" in verdict("git config user.email other@example.com")
-    assert "not changed" in verdict("git config --global user.name 'Someone Else'")
+    assert "never write git config" in verdict("git config user.email other@example.com")
+    assert "never write git config" in verdict("git config --global user.name 'Someone Else'")
 
 
 def test_the_process_environment_counts_too(monkeypatch):
@@ -379,10 +374,10 @@ NEW_GIT_RULES = [
     ("git remote remove origin", "git remote remove"),
     ("git remote rm origin", "git remote rm"),
     ("git remote rename origin up", "git remote rename"),
-    ("git config --unset core.hooksPath", "hooksPath"),
-    ("git config --global core.hooksPath /x", "hooksPath"),
-    ("git config --replace-all core.hooksPath /x", "hooksPath"),
-    ("git config --add core.hooksPath /x", "hooksPath"),
+    ("git config --unset core.hooksPath", "never write git config"),
+    ("git config --global core.hooksPath /x", "never write git config"),
+    ("git config --replace-all core.hooksPath /x", "never write git config"),
+    ("git config --add core.hooksPath /x", "never write git config"),
 ]
 
 ALLOWED_AGAIN = [
@@ -1056,7 +1051,8 @@ def test_the_deny_rules_cover_both_shell_tools():
 def test_every_config_write_syntax_that_reaches_the_hooks_or_the_identity_is_blocked(command, why):
     reason = verdict(command)
 
-    assert reason is not None and why in reason, (command, reason)
+    # round 2: every config write is blocked with one reason; `why` is kept for --config-env, which has its own
+    assert reason is not None and ("never write git config" in reason or why in reason), (command, reason)
 
 
 @pytest.mark.parametrize(
@@ -1074,13 +1070,10 @@ def test_every_config_write_syntax_that_reaches_the_hooks_or_the_identity_is_blo
         "git config -l",
         "git config get user.name",
         "git config --get-regexp '^core'",
-        "git config set user.name 'Daniel Herdenez'",
-        f"git config set user.email {OWNER['user.email']}",
-        "git config set core.autocrlf true",
         "git config --file .gitmodules --get submodule.x.url",
     ],
 )
-def test_config_reads_and_unrelated_writes_still_pass(command):
+def test_config_reads_still_pass(command):
     assert verdict(command) is None, command
 
 
@@ -1106,9 +1099,6 @@ def test_git_dash_c_keeps_the_checkout_path():
         "git --git-dir=../release/.git commit -m 'feat: x'",
         "git --work-tree ../release --git-dir ../release/.git merge dev",
         "GIT_DIR=../release/.git git commit -m 'feat: x'",
-        "cd ../release && git commit -m 'feat: x'",
-        "Set-Location ../release; git commit -m 'feat: x'",
-        "cd ../release && git pull --ff-only origin main",  # the sync is allowed only when that checkout is on dev
     ],
 )
 def test_a_commit_in_another_checkout_follows_that_checkouts_branch(command):
@@ -1121,8 +1111,8 @@ def test_the_location_is_passed_to_every_lookup():
     git = FakeGit(branch="main", checkouts={"../work": "dev"})
 
     assert guard.decide("git -C ../work commit -m 'feat: x'", git) is None
-    assert guard.decide("cd ../work && git pull --ff-only origin main", git) is None
     assert all(location[:2] == ("-C", "../work") for location in git.locations), git.locations
+    assert guard.decide("cd ../work && git pull --ff-only origin main", git) is not None  # round 2: cd fails closed
 
 
 @pytest.mark.parametrize(
@@ -1182,7 +1172,7 @@ def test_real_checkouts_on_different_branches_are_told_apart(two_checkouts):
 
     # quoted: pytest's temporary directory can hold a space (`pytest-of-<user name>`)
     assert "current branch is 'main'" in guard.decide(f'git -C "{release}" commit -m "feat: x"', from_work)
-    assert "current branch is 'main'" in guard.decide(f'cd "{release}" && git commit -m "feat: x"', from_work)
+    assert "which checkout" in guard.decide(f'cd "{release}" && git commit -m "feat: x"', from_work)
     assert guard.decide(f'git -C "{work}" commit -m "feat: x"', lambda *a: guard.run_git("-C", release, *a)) is None
 
 
@@ -1215,3 +1205,219 @@ def test_the_script_reads_the_branch_of_the_session_directory(two_checkouts):
 )
 def test_every_merge_path_the_agents_could_use_is_blocked(command):
     assert verdict(command) is not None, command
+
+
+# --- Unit A round 2: fail closed (docs/runs/2026-11-23-A-codex-verify.md) ---------------------------------------------
+# Codex found two more spellings the guard got wrong. Instead of adding them one by one, the guard now fails closed: every
+# git config write is blocked, and a git write whose checkout and branch the guard cannot be sure of is blocked.
+
+OTHER_EMAIL = "other" + "@example.com"
+
+
+# Codex's case 1: an abbreviated option removed core.hooksPath. Every write, in any spelling, is blocked.
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git config --remove-s core",  # Codex's case: git accepts the abbreviation
+        "git config --remove-sec core",
+        "git config --remove-section core",
+        "git config --rename-s core old",
+        "git config --unset-a core.hooksPath",
+        "git config --uns core.hooksPath",
+        "git config --repl core.hooksPath /x",
+        "git config --ad core.hooksPath /x",
+        "git config --ed",
+        "git config --glob core.hooksPath /x",
+        "git config --file=.git/config core.hooksPath /x",
+        "git config set --gl core.hooksPath /x",
+        "git config remove-section core",
+        "git config remove-section alias",  # an unrelated section: still a write
+        "git config set core.autocrlf true",
+        "git config core.autocrlf true",
+        "git config --add alias.ci commit",
+        "git config unset user.email",
+        "git config --system --unset-all core.hooksPath",
+        "git config -lz core.hooksPath /x",  # a combined short option is not on the list either
+        "git -C ../release config --unset core.hooksPath",
+        "cd ../release && git config --remove-s core",
+    ],
+)
+def test_round2_every_config_write_is_blocked_in_any_spelling(command):
+    reason = verdict(command)
+
+    assert reason is not None and "never write git config" in reason, (command, reason)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git config --get core.hooksPath",
+        "git config get core.hooksPath",
+        "git config core.hooksPath",
+        "git config --list",
+        "git config --list --show-origin",
+        "git config list --show-scope",
+        "git config --get-all remote.origin.fetch",
+        "git config --global --get core.autocrlf",
+        "git config get --type=bool core.autocrlf",
+        "git config --get core.hooksPath | cat",
+    ],
+)
+def test_round2_config_reads_pass(command):
+    assert verdict(command) is None, command
+
+
+@pytest.mark.parametrize(
+    "command,why",
+    [
+        ("git -c user.name=Someone commit -m 'feat: x'", "overrides the identity"),
+        (f"git -c author.email={OTHER_EMAIL} commit -m 'feat: x'", "overrides the identity"),
+        ("git -c committer.name=Someone merge dev", "overrides the identity"),
+        (f"git -c USER.EMAIL={OTHER_EMAIL} commit -m 'feat: x'", "overrides the identity"),
+        ("git --config-env=user.email=EMAIL commit -m 'feat: x'", "overrides the identity"),
+        ("git -c core.hooksPath=/dev/null commit -m 'feat: x'", "hooksPath"),
+        ("git -c core.worktree=../release commit -m 'feat: x'", "git -c core.worktree"),
+        ("git -c alias.ci=commit ci -m 'feat: x'", "not a git command the guard knows"),
+        ("GIT_INDEX_FILE=/tmp/i git commit -m 'feat: x'", "GIT_INDEX_FILE"),
+        ("HOME=/tmp git commit -m 'feat: x'", "HOME"),
+        ("GIT_CONFIG_GLOBAL=/tmp/c git commit -m 'feat: x'", "GIT_CONFIG_GLOBAL"),
+    ],
+)
+def test_round2_command_line_config_and_environment_on_a_write_are_blocked(command, why):
+    reason = verdict(command)
+
+    assert reason is not None and why in reason, (command, reason)
+
+
+def test_round2_the_identity_also_comes_from_author_and_committer_config():
+    config = {**OWNER, "author.name": "Someone Else"}
+
+    assert "commits are made as" in verdict("git commit -m 'feat: x'", config=config)
+
+
+# Codex's case 2: `cd ../work | git commit` from main. The cd runs in its own process, so git commits on main.
+def test_round2_codex_pipeline_case_is_blocked_from_main():
+    git = FakeGit(branch="main", checkouts={"../work": "dev"})
+
+    assert guard.decide("cd ../work | git commit -m sample", git) is not None
+
+
+def test_round2_codex_pipeline_case_is_blocked_from_dev_too():
+    git = FakeGit(branch="dev", checkouts={"../work": "main"})
+
+    assert "which checkout" in guard.decide("cd ../work | git commit -m sample", git)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # pipelines
+        "cd ../work | git push origin dev",
+        "git commit -m 'feat: x' | cat",
+        "git push origin dev 2>&1 | tail -1",
+        "echo y | git merge dev",
+        "git -C ../work commit -m 'feat: x' | tee log.txt",
+        # chains where a cd or a variable changes the target
+        "cd ../work && git commit -m 'feat: x'",
+        "cd ../work; git commit -m 'feat: x'",
+        "cd ../work || git commit -m 'feat: x'",
+        "cd ../work & git commit -m 'feat: x'",
+        "pushd ../work && git push origin dev",
+        "Set-Location ../work; git commit -m 'feat: x'",
+        "sl ../work; git commit -m 'feat: x'",
+        "if true; then cd ../work; fi; git commit -m 'feat: x'",
+        "export GIT_DIR=../release/.git; git commit -m 'feat: x'",
+        "GIT_DIR=../release/.git; git commit -m 'feat: x'",
+        "$env:GIT_DIR = '../release/.git'; git commit -m 'feat: x'",
+        "${env:GIT_WORK_TREE}='../release'; git commit -m 'feat: x'",
+        "[Environment]::SetEnvironmentVariable('GIT_DIR', '../release/.git'); git commit -m 'feat: x'",
+        "Set-Item env:GIT_DIR ../release/.git; git commit -m 'feat: x'",
+        "source ./env.sh && git push origin dev",
+        "alias git='git -C ../release'; git commit -m 'feat: x'",
+        "Set-Alias git ./fake.ps1; git commit -m 'feat: x'",
+        # subshells and blocks
+        "(cd ../work && git commit -m 'feat: x')",
+        "(git commit -m 'feat: x')",
+        "{ cd ../work; git commit -m 'feat: x'; }",
+        "function git { & git.exe -C ../release @args }; git commit -m 'feat: x'",
+        "if ($true) { git commit -m 'feat: x' }",
+        # command substitution
+        "echo $(git commit -m 'feat: x')",
+        "x=$(git push origin dev)",
+        "echo `git commit -m 'feat: x'`",
+        "echo \"$(cd ../work && git commit -m 'feat: x')\"",
+        "cat <(git push origin dev)",
+        # a ref or a checkout built at run time
+        "git push origin $branch",
+        "git branch -D $old",
+        "git merge $(git rev-parse --abbrev-ref @{u})",
+        "git -C $dir commit -m 'feat: x'",
+        "git ci -m 'feat: x'",  # an alias: the guard cannot see what it runs
+        # xargs, eval and runners
+        "echo ../work | xargs -I{} git -C {} commit -m 'feat: x'",
+        "eval 'cd ../work && git commit -m x'",
+        "timeout 60 git push origin main",
+        "env -u GIT_DIR git commit -m 'feat: x'",
+        "echo 'git push origin main' | bash",
+        "bash <<'EOF'\ngit push origin main\nEOF",
+        "python - <<'EOF'\nimport subprocess; subprocess.run(['git', 'push', 'origin', 'main'])\nEOF",
+        # quoting the guard cannot follow
+        "git commit -m 'unterminated\ngit push origin main",
+        "cat <<EOF > notes.txt\n$(git push origin main)\nEOF",
+        "git commit -m @\"\n$(git push origin main)\n\"@",
+    ],
+)
+def test_round2_a_write_whose_target_is_uncertain_is_blocked(command):
+    git = FakeGit(branch="dev", checkouts={"../work": "dev", "../release": "main", "../release/.git": "main"})
+
+    assert guard.decide(command, git) is not None, command
+
+
+def test_round2_a_quoted_heredoc_marker_does_not_hide_the_next_line():
+    assert "release branch" in verdict('git commit -m "use <<EOF in docs"\ngit push origin main')
+
+
+def test_round2_a_detached_head_blocks_a_commit():
+    assert "detached" in verdict("git commit -m 'feat: x'", branch="")
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        # what the session does on dev every day, literal and on its own
+        "git add -A && git commit -q -m 'feat: add a thing' && git push origin dev",
+        "git commit -m \"$(cat <<'EOF'\nfeat: say it in the body\n\nA \\\"quoted\\\" word; cd ../x | git push origin main is text.\nEOF\n)\"",
+        "git commit -am \"$(cat <<'EOF'\nfix: x\n\nBody.\nEOF\n)\"",
+        "git commit -m \"fix: x\n\ncd and git push --force origin main in the body are text\"",
+        "git commit -q -m @'\nfeat: x\n\ngit push origin main | bash is text.\n'@",
+        "git commit -F - <<'EOF'\nfeat: x\n\n$(git push origin main) is text in a quoted here-document.\nEOF",
+        "git push origin dev",
+        "git push -u origin dev 2>&1",
+        "git push origin dev > push.log 2>&1",
+        "git pull --ff-only origin main",
+        "git merge --ff-only origin/main",
+        "git pull --ff-only origin main && git push origin dev",
+        "git fetch origin && git status --short",
+        "gh pr create --base main --head dev --title 'x' --body 'y'",
+        "GIT_EDITOR=true git merge --ff-only origin/main",
+        "git -C ../work commit -m 'feat: x'",
+        "git -c color.ui=never commit -m 'feat: x'",
+        # reads keep every shape
+        "git log --oneline | head -5",
+        "git status --short | cat",
+        "git branch --show-current | cat",
+        "git branch -r --contains HEAD | wc -l",
+        "git tag --list | sort",
+        "cd ../work && git status",
+        "cd ../work; git log -1",
+        "(git status)",
+        "x=$(git rev-parse HEAD) && echo $x",
+        "git diff --stat | tee diff.txt",
+        "if git diff --quiet; then echo clean; fi",
+        "echo 'git push' > notes.txt",
+    ],
+)
+def test_round2_simple_literal_commands_on_dev_still_pass(command):
+    git = FakeGit(branch="dev", checkouts={"../work": "dev"})
+
+    assert guard.decide(command, git) is None, command

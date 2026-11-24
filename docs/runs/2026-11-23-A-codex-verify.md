@@ -1,0 +1,12 @@
+# FAIL
+
+Verified `535f3c2` on `dev` against `67db0e0`. Used disposable local clones and sample inputs. No commits, pushes or GitHub requests were made.
+
+1. **New issue** — Bash and PowerShell samples for `git config set` and `unset core.hooksPath` changed from allow to block, and `get` still passed. The guard allowed `git config --remove-s core`. Git for Windows 2.56.1 accepted the abbreviation in a disposable clone and removed `core.hooksPath`.
+2. **New issue** — The parser retains `-C scratch-checkout` and the guard blocks a commit aimed at the `main` clone. From `main` it allowed the sample `cd ../work | git commit -m sample`, while the same Bash pipeline with `git branch --show-current` printed `main`. This shows a guard misclassification. The native commit hooks still check the actual branch while enabled.
+3. **Closed** — A local `git merge --no-ff --edit` on `main` was rejected by `pre-merge-commit` with HEAD unchanged. An editor set to fail prevented a commit if the hook let it through. A merge message was rejected by `commit-msg` on `main`, and direct hook dispatch on `master` also blocked.
+4. **Closed as accepted risk** — The shared credentials and Daniel-only merge policy are documented. All 12 merge-path regressions passed within the 651-test guard suite. A sample `gh api --method=PATCH` against the `main` ref also blocked, and a ruleset GET sample passed. Daniel's decision to keep tag creation enabled on GitHub is recorded. The local guard rejected tag creation and `pre-push` rejected a new-tag record.
+5. **Closed** — Parsed both workflow revisions. The checkout persistence setting changed from absent to `false`, with `contents: read` retained. Verified there is no second checkout or explicit credential setup in the later workflow steps. The fixes report records the successful CI run.
+6. **Closed** — Compared Git tree modes before and after and confirmed all four hooks are `100755` in a fresh Windows clone with `core.autocrlf=true`. All four checked out with LF, and the tar archive independently preserved their executable bits. The sourced helper stayed `100644`. The fixes report records the POSIX clone test passing in CI.
+
+The guard accepted the `dev` commit, push and sync samples and `gh pr create --base main --head dev`. Git dispatched `pre-commit` and `commit-msg` successfully on `dev`. `pre-push` accepted a fast-forward `dev` record and rejected the reverse. A real `git pull --ff-only origin main` from a disposable local origin advanced `dev` to `535f3c2` using existing commits.

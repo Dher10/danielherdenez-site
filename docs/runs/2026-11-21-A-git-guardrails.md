@@ -174,3 +174,43 @@ CI now also runs the guard and hook tests: a "Guard and hook tests" step (`pipx 
 - `python -m pytest .claude/hooks -q`: **693 passed, 1 skipped** (the POSIX clone test, on Windows)
 - `npm run lint`: exit 0 · `npx tsc --noEmit`: exit 0 · `npm run build`: exit 0
 - `npx playwright test` with the default settings against a fresh `next start -p 3000` of this build, as in CI: **91 passed**. A leftover `next start` from an earlier session held port 3000 and was stopped first (with Daniel's approval). With it running, Playwright had silently reused that older server.
+- CI on `535f3c2` fix: close the gaps found in the guardrails review: [45301217403](https://github.com/Dher10/danielherdenez-site/actions/runs/45301217403) **passed**. "Guard and hook tests": 694 passed, none skipped, so the POSIX clone test ran. Playwright: 91 passed.
+
+## Round 2: fail closed (Codex verification, 2026-11-23)
+
+Codex verified `535f3c2`: **FAIL**, two new issues (`docs/runs/2026-11-23-A-codex-verify.md`); the other four findings closed.
+
+1. `git config --remove-s core` (an abbreviation git accepts) removed `core.hooksPath`; the guard let it through.
+2. From `main`, `cd ../work | git commit -m sample` passed: the guard applied the `cd` to the commit, but each side of a pipe runs in its own process, so git committed on `main`.
+
+Both came from the same approach: the guard listed the dangerous spellings and let the rest through. Each round found another spelling. Round 2 reverses the default (Daniel's decision): **when the guard is not sure, it blocks.**
+
+### What changed
+
+| Area | Before | Now |
+|------|--------|-----|
+| `git config` | Blocked writes to a list of keys (`core.hooksPath`, `include.*`, the identity), in the spellings the guard knew. | **Every write is blocked**, whatever the key, scope or spelling. `git config` passes only as a read: a read verb (`get`, `list`) or action (`--get`, `--get-all`, `--get-regexp`, `--list`, ...) or the legacy `git config <key>`, with every other option an exact name from a short list. An abbreviation is not on the list, so `--remove-s`, `--unset-a`, `--ad`, `--ed` and `-lz` are blocked without being named. Agents never need to write config; Daniel does it by hand. |
+| `-c` / `--config-env` | Blocked for `core.hooksPath` and `include.*`. | Also blocked for any identity key (`user.*`, `author.*`, `committer.*`), on any command. On a git write, only display keys pass (`color.*`, `pager.*`, `advice.*`, `core.pager`, `core.editor`, ...); `-c core.worktree=...` and the like are blocked. |
+| Which checkout and branch | Followed `cd`, `Set-Location`, `pushd` across the line to compose `-C` paths. | Does not try. A git write (anything that is not a read: commit, merge, push, pull, tag, `branch -d`, reset, an unknown subcommand) passes only when its target is certain: not inside `$(...)`, backticks or `<(...)`; no pipe, subshell or block on the line; no `cd`/`pushd`/`popd`/`Set-Location`, `export`, `$env:` or `[Environment]::` assignment, `source`, `alias`, `Set-Alias` or `function` anywhere on the line. The checkout is the session's `cwd` plus the command's own literal `-C`, `--git-dir`, `--work-tree`, `GIT_DIR`, `GIT_WORK_TREE`. Reads are unaffected: `git log \| head`, `cd x && git status` still pass. |
+| Run-time values on a write | A checkout path built at run time was blocked. | Also a ref built at run time (`git push origin $b`, `git branch -D $old`); an environment variable outside a short list (`GIT_INDEX_FILE`, `HOME`, `GIT_CONFIG_*`); a subcommand the guard does not know (a git alias such as `git ci`); a commit or merge on a detached HEAD. |
+| Reading the line | Split per line with `shlex`; a here-document was found with a regex, also inside a quoted string. | A quote-aware scanner reads the whole line first: quotes (also across lines), `$(...)`, backticks, `<(...)`, subshells, blocks, pipes, here-documents (only outside quotes) and PowerShell here-strings. A substitution is read on its own and marked as nested. A line that mentions git and leaves a quote, bracket or here-document open, or whose here-document or `@"` here-string body the shell expands (`$(...)` in it), is blocked. The line is also split at every bracket, so `if ($x) { git push origin main }` is read. |
+| Hidden git | | Blocked: git or gh behind a runner's own arguments (`timeout 60 git`, `env -u X git`, `sudo -u x git`); a shell or interpreter reading stdin on a line that mentions git (`echo "git push" \| bash`, `bash <<EOF`, `python - <<EOF`); `trap '...git...'`. |
+
+What the session does every day still passes, and has tests: `git add -A && git commit ... && git push origin dev`, `git commit -m "$(cat <<'EOF' ... EOF)"` (also `-am`), multi-line `-m "..."` messages and PowerShell here-strings, `git push origin dev 2>&1` and `> push.log`, the sync `git pull --ff-only origin main` / `git merge --ff-only origin/main`, `gh pr create --base main --head dev`, `git -C <literal path> commit`.
+
+**Behaviour change to know:** a git write piped into another program is now blocked (`git push origin dev 2>&1 | tail -1`, which round 1 had on its allowed list). Redirect to a file instead, or run it plain. The same goes for `cd <dir> && git commit`: use `git -C <dir> commit`.
+
+Files: `.claude/hooks/git_guard.py`, `.claude/hooks/test_git_guard.py`, `AGENTS.md` ("Guardrails de git", the Claude Code line). The git hooks did not change.
+
+### Tests
+
+- Codex's two cases: `test_round2_every_config_write_is_blocked_in_any_spelling` (22 spellings, starting with `--remove-s core`) and `test_round2_codex_pipeline_case_is_blocked_from_main` / `..._from_dev_too`.
+- Around them: `test_round2_a_write_whose_target_is_uncertain_is_blocked` (48 forms: pipelines, `&&`/`;`/`||`/`&` chains with a `cd` or environment change, subshells, blocks, functions, aliases, substitutions, run-time refs and paths, a git alias, xargs, eval, runners, stdin to a shell, quoting it cannot follow); `test_round2_command_line_config_and_environment_on_a_write_are_blocked` (11); `test_round2_config_reads_pass` (10); `test_round2_simple_literal_commands_on_dev_still_pass` (29); identity from `author.*`, detached HEAD, and a `<<EOF` inside a quoted message no longer hiding the next line.
+- Earlier tests whose expectation changed on purpose: config writes that passed before (`git config set core.autocrlf true`, setting the identity to the owner's own values) and writes in a pipeline (`git push origin dev | cat`) are now blocked; the config tests check the one reason; `cd ../release && git commit` now reads "cannot tell which checkout" instead of the branch it used to follow.
+- `test_the_location_is_passed_to_every_lookup` failed twice during this round. Neither failure was a guard defect: both times the command was blocked, but the assertion I had updated expected the wrong reason or ran in the wrong order. The `cd` line runs from `main` and is rejected as "release branch" before the certainty check; it now asserts that the command is blocked.
+
+### Verification (round 2)
+
+- `python -m pytest .claude/hooks -q`: **807 passed, 1 skipped** (the POSIX clone test, on Windows)
+- `npm run lint`: exit 0 · `npx tsc --noEmit`: exit 0 · `npm run build`: exit 0
+- Playwright: **91 passed**, against a fresh `next start` of this build. Port 3000 was taken by a `next start` this session did not start (started 19:54 today), so it was left running and the fresh server ran on port 3001 (`PLAYWRIGHT_BASE_URL=http://localhost:3001`). The config's `webServer` check still saw port 3000 and launched nothing.
