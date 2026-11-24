@@ -1,0 +1,8 @@
+#!/bin/sh
+# pre-merge-commit: runs before `git merge` records an automatic merge commit, which does not run pre-commit.
+# Same check as pre-commit (owner-check.sh): no merge commit on main or master, and the owner's full identity.
+# A fast-forward (the documented sync `git pull --ff-only origin main` on dev) creates no commit and does not run it.
+
+. "$(dirname "$0")/owner-check.sh" || exit 1
+owner_check pre-merge-commit || exit 1
+exit 0

@@ -18,7 +18,11 @@ It blocks:
   - changing a remote (`git remote add`, `set-url`, `remove`, `rename`, ...);
   - `commit --amend` when HEAD is already on a remote;
   - a commit whose author or committer is not Daniel Herdenez <edherdenez@gmail.com>, and a change of that identity;
-  - changing `core.hooksPath` (reading it, `git config --get core.hooksPath`, is allowed);
+  - changing `core.hooksPath` (reading it, `git config --get core.hooksPath`, is allowed), in the current `git config
+    set|unset|edit|remove-section` syntax and the legacy one, through `-c` or `--config-env`, or through an `include.path`;
+  - a mutating git command in a checkout the guard cannot name (`git -C $x`, `cd $x`, `cd -`, `popd`). The branch, config and
+    tags are read in the checkout the command runs in: the session's `cwd` from the hook input, then each `cd`, `-C`,
+    `--git-dir`, `--work-tree`, `GIT_DIR` and `GIT_WORK_TREE`;
   - git behind a wrapper that carries a string the parser cannot see into (`bash -c`, `sh -c`, `eval`,
     `powershell`/`pwsh -Command`, `cmd /c`, `python -c`, `node -e`, `Invoke-Expression`, ...) whenever the string
     mentions git, and git behind a program name built at run time (`x=git; $x push ...`). The session runs git
@@ -70,6 +74,9 @@ READ_ONLY = {
 # Subcommands that create commits (their identity must be the owner's).
 COMMITTING = {"commit", "merge", "revert", "cherry-pick", "am"}
 CONFIG_WRITING_FLAGS = {"--unset", "--unset-all", "--add", "--replace-all", "-e", "--edit", "--rename-section", "--remove-section"}
+CONFIG_READING_FLAGS = {"--get", "--get-all", "--get-regexp", "--get-urlmatch", "-l", "--list", "--get-color", "--get-colorbool"}
+CONFIG_VERBS = {"get", "set", "unset", "list", "edit", "rename-section", "remove-section", "get-color", "get-colorbool"}
+CONFIG_VALUE_OPTIONS = {"-f", "--file", "--blob", "--type", "--default", "--value", "--url", "--comment"}
 REMOTE_CHANGING = {"add", "set-url", "remove", "rm", "rename", "set-head", "set-branches", "prune"}
 BRANCH_REMOVING_FLAGS = {"-d", "-D", "--delete", "-m", "-M", "--move"}
 PUSH_OPTIONS_WITH_VALUE ={"-o", "--push-option", "--repo", "--receive-pack", "--exec"}
@@ -160,6 +167,12 @@ def program_name(token: str) -> str:
     return re.sub(r"\.(exe|cmd|bat|com|ps1)$", "", name)
 
 
+def known_path(path: str) -> bool:
+    """Whether the guard can name a directory from its text: not one built at run time (`$x`, `$(...)`, backticks, `%X%`)."""
+
+    return bool(path) and path != "-" and not re.search(r"[$`%]", path)
+
+
 class Invocation:
     """One `git ...` simple command: its environment, its global options, its subcommand and its arguments."""
 
@@ -168,6 +181,9 @@ class Invocation:
         self.config: dict[str, str] = {}
         self.sub = ""
         self.args: list[str] = []
+        # where git runs: the -C, --git-dir and --work-tree options (and GIT_DIR, GIT_WORK_TREE), passed on to every lookup
+        self.location: list[str] = []
+        self.location_known = True
         index = 0
         while index < len(tokens) and re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*=.*", tokens[index]):
             name, _, value = tokens[index].partition("=")
@@ -184,13 +200,35 @@ class Invocation:
                 key, _, value = tokens[index + 1].partition("=")
                 self.config[key.lower()] = value
                 index += 2
-            elif token in ("-C", "--git-dir", "--work-tree", "--namespace") and index + 1 < len(tokens):
+            elif token == "--config-env" and index + 1 < len(tokens):  # `--config-env key=ENVVAR`: the value comes from a variable
+                self.config[tokens[index + 1].partition("=")[0].lower()] = "$" + tokens[index + 1].partition("=")[2]
+                index += 2
+            elif token.startswith("--config-env="):
+                key = token.split("=", 1)[1].partition("=")[0]
+                self.config[key.lower()] = "$" + token.split("=", 2)[-1]
+                index += 1
+            elif token in ("-C", "--git-dir", "--work-tree") and index + 1 < len(tokens):
+                self._locate(token, tokens[index + 1])
+                index += 2
+            elif token.startswith(("--git-dir=", "--work-tree=")):
+                name, _, value = token.partition("=")
+                self._locate(name, value)
+                index += 1
+            elif token == "--namespace" and index + 1 < len(tokens):
                 index += 2
             else:
                 index += 1
+        for variable, option in (("GIT_DIR", "--git-dir"), ("GIT_WORK_TREE", "--work-tree")):
+            if variable in self.env and option not in self.location:  # the option wins over the variable, as in git
+                self._locate(option, self.env[variable])
         if index < len(tokens):
             self.sub = tokens[index]
             self.args = [canonical_option(arg) for arg in tokens[index + 1 :]]
+
+    def _locate(self, option: str, path: str) -> None:
+        if not known_path(path):
+            self.location_known = False
+        self.location.extend([option, path])
 
     def flags(self) -> list[str]:
         """The arguments that are options (they start with `-`), up to a `--`."""
@@ -336,6 +374,8 @@ def _problem(inv: Invocation, git: GitRunner) -> str | None:
         return "overriding core.hooksPath through the environment skips the hooks (AGENTS.md)"
     if "core.hookspath" in inv.config:
         return "overriding core.hooksPath skips the hooks (AGENTS.md)"
+    if any(_guarded_key(key) for key in inv.config):  # `-c include.path=...`
+        return next(_guarded_key(key) for key in inv.config if _guarded_key(key))
     pull_rebase = sub == "pull" and any(re.fullmatch(r"-[a-zA-Z]*r[a-zA-Z]*", f) for f in flags)
     if sub == "rebase" or pull_rebase or any(a == "--rebase" or (a.startswith("--rebase=") and a != "--rebase=false") for a in args):
         return "rebase rewrites history and is never allowed (AGENTS.md)"
@@ -353,16 +393,7 @@ def _problem(inv: Invocation, git: GitRunner) -> str | None:
             return "commit --amend on a commit that is already on a remote rewrites history (AGENTS.md)"
 
     if sub == "config":
-        positional = inv.positional()
-        if len(positional) >= 2 and positional[0].lower() in ("user.name", "user.email"):
-            expected = OWNER_NAME if positional[0].lower() == "user.name" else OWNER_EMAIL
-            if positional[1] != expected:
-                return f"the git identity is {OWNER_NAME} <{OWNER_EMAIL}> and is not changed (AGENTS.md)"
-        if positional and positional[0].lower() == "core.hookspath":
-            # `git config core.hooksPath` and `git config --get core.hooksPath` read it (CONTRIBUTING asks for that check)
-            if len(positional) >= 2 or any(flag in CONFIG_WRITING_FLAGS for flag in flags):
-                return "core.hooksPath is not changed (AGENTS.md)"
-        return None
+        return _config_problem(inv)
 
     if sub == "remote":
         action = (inv.positional() or [""])[0]
@@ -407,8 +438,60 @@ def _problem(inv: Invocation, git: GitRunner) -> str | None:
         if arg in tags or arg.startswith(("refs/tags/", "tags/")):
             return f"{arg!r} is a tag: tags are frozen (AGENTS.md)"
     if sub in COMMITTING | {"pull", "cherry-pick", "revert", "am", "reset", "commit", "merge"}:
-        if _is_protected(_current_branch(git)):
-            return f"the current branch is {_current_branch(git)!r}: nothing is committed or merged there (AGENTS.md)"
+        try:
+            branch = git("branch", "--show-current")
+        except Exception:  # noqa: BLE001 - the branch of the target checkout cannot be read: fail closed
+            return "the current branch of the target checkout cannot be read, so the commit is not allowed (AGENTS.md)"
+        if _is_protected(branch):
+            return f"the current branch is {branch!r}: nothing is committed or merged there (AGENTS.md)"
+    return None
+
+
+def _guarded_key(key: str) -> str | None:
+    """Why a config key is not written by an agent, or None. Section and key names ignore case; `includeIf.<cond>.path` too."""
+
+    key = key.lower()
+    if key == "core.hookspath":
+        return "core.hooksPath is not changed (AGENTS.md)"
+    if key == "include.path" or (key.startswith("includeif.") and key.endswith(".path")):
+        return "an include.path can bring in a file that sets core.hooksPath: it is not changed (AGENTS.md)"
+    return None
+
+
+def _config_problem(inv: Invocation) -> str | None:
+    """
+    `git config` in both syntaxes: the current one, with a verb first (`git config set|unset|get|list|edit|rename-section|
+    remove-section ...`), and the legacy one (`git config [--unset|--add|...] <key> [<value>]`). The options that take a value
+    (`--file x`, `--type path`, `--comment note`) are skipped, so their value is never read as the key.
+    """
+
+    flags = inv.flags()
+    positional = inv.positional(CONFIG_VALUE_OPTIONS)
+    verb = positional[0] if positional and positional[0] in CONFIG_VERBS else None
+    rest = positional[1:] if verb else positional
+    if verb == "edit" or {"-e", "--edit"} & set(flags):
+        return "git config edit opens the whole file, core.hooksPath and the identity included: it is not allowed (AGENTS.md)"
+    if verb in ("rename-section", "remove-section") or {"--rename-section", "--remove-section"} & set(flags):
+        section = (rest[0] if rest else "").lower().split(".")[0]
+        if section in ("core", "user", "include") or section.startswith("includeif"):
+            return f"renaming or removing the [{section}] section changes core.hooksPath or the identity: it is not allowed (AGENTS.md)"
+        return None
+    unsetting = verb == "unset" or bool({"--unset", "--unset-all"} & set(flags))
+    if verb:
+        writing = verb in ("set", "unset")
+    else:
+        reading = bool(CONFIG_READING_FLAGS & set(flags))
+        writing = unsetting or bool(CONFIG_WRITING_FLAGS & set(flags)) or (len(rest) >= 2 and not reading)
+    if not writing or not rest:
+        return None  # `git config core.hooksPath`, `git config get core.hooksPath`: reading it is the documented check
+    key = rest[0].lower()
+    guarded = _guarded_key(key)
+    if guarded:
+        return guarded
+    if key in ("user.name", "user.email"):
+        expected = OWNER_NAME if key == "user.name" else OWNER_EMAIL
+        if unsetting or len(rest) < 2 or rest[1] != expected:
+            return f"the git identity is {OWNER_NAME} <{OWNER_EMAIL}> and is not changed (AGENTS.md)"
     return None
 
 
@@ -742,13 +825,59 @@ def _wrapper_problem(tokens: list[str], command: str) -> str | None:
     return None
 
 
+CHANGING_DIRECTORY = {"cd", "chdir", "set-location", "sl", "pushd", "push-location"}
+LEAVING_DIRECTORY = {"popd", "pop-location"}
+LOCATION_VALUE_OPTIONS = {"-path", "-literalpath", "-stackname"}
+
+
+def _directory_change(tokens: list[str]) -> tuple[str | None, bool] | None:
+    """
+    For `cd dir`, `Set-Location -Path dir`, `pushd dir`: (dir, True), with `~` expanded; (None, False) when the guard cannot
+    name the directory (`cd $x`, `cd -`, `popd`). None when the segment does not change directory.
+    """
+
+    rest = _strip_prefixes(tokens)
+    if not rest:
+        return None
+    program = program_name(rest[0])
+    if program in LEAVING_DIRECTORY:
+        return None, False
+    if program not in CHANGING_DIRECTORY:
+        return None
+    targets, skip = [], False
+    for arg in rest[1:]:
+        if skip:
+            targets.append(arg)
+            skip = False
+        elif arg.lower() in LOCATION_VALUE_OPTIONS:
+            skip = True
+        elif arg.startswith("-") and arg != "-":
+            continue  # `cd -P`, `Set-Location -PassThru`
+        else:
+            targets.append(arg)
+    target = targets[0] if targets else "~"
+    if target.startswith("~"):
+        target = os.path.expanduser(target)
+    return (target, True) if known_path(target) else (None, False)
+
+
 def decide(command: str, git: GitRunner = run_git) -> str | None:
     """None if the command may run, else the reason it is blocked."""
 
+    directories: list[str] = []  # the `cd`s before this segment, as `-C` options: git composes them the way the shell would
+    directories_known = True
     pending = segments(command)
     while pending:
         tokens = pending.pop(0)
         pending.extend(_substitutions(tokens))
+        moved = _directory_change(tokens)
+        if moved is not None:
+            target, known = moved
+            if known:
+                directories.extend(["-C", target])
+            else:
+                directories_known = False
+            continue
         wrapped = _wrapper_problem(tokens, command)
         if wrapped:
             return wrapped
@@ -769,7 +898,11 @@ def decide(command: str, git: GitRunner = run_git) -> str | None:
         inv = Invocation(_strip_prefixes(tokens))
         if not inv.is_git or not inv.sub:
             continue
-        problem = _problem(inv, git)
+        if not (directories_known and inv.location_known) and inv.sub not in READ_ONLY:
+            return "the guard cannot tell which checkout this git command runs in (a path built at run time, `cd -`, `popd`): run it with a literal path (AGENTS.md)"
+        location = [*directories, *inv.location]
+        scoped = git if not location else (lambda *args, _location=location: git(*_location, *args))
+        problem = _problem(inv, scoped)
         if problem:
             return problem
     return None
@@ -783,7 +916,11 @@ def main() -> int:
     command = (event.get("tool_input") or {}).get("command") if isinstance(event, dict) else None
     if not isinstance(command, str):
         return 0
-    reason = decide(command)
+    # Claude Code gives the session's working directory as `cwd`; the hook process itself may run elsewhere, so every
+    # lookup (branch, config, tags) is made in that directory.
+    cwd = event.get("cwd")
+    git = (lambda *args: run_git("-C", cwd, *args)) if isinstance(cwd, str) and cwd else run_git
+    reason = decide(command, git)
     if reason:
         print(f"Blocked by .claude/hooks/git_guard.py: {reason}", file=sys.stderr)
         return 2

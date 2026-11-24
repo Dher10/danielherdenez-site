@@ -21,6 +21,13 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false # no later step needs the token; repository and dependency code run after this
+
+      # The Claude Code guard and the git hooks (.claude/hooks). On Ubuntu the POSIX-only test runs too: a fresh clone
+      # must check the hooks out executable. pipx (preinstalled on the runner) runs pytest without touching system Python.
+      - name: Guard and hook tests
+        run: pipx run pytest .claude/hooks -q -rs
 
       - uses: actions/setup-node@v7
         with:

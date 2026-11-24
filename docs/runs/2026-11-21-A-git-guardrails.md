@@ -103,7 +103,7 @@ Nothing was pushed to GitHub and no remote history was touched. Three layers:
 - **The guard does not see** a script file that runs git, a shell alias or function, or git inside a PowerShell script block or parentheses (same limits as PitchCraft, listed in its docstring). The git hooks and the rulesets cover those.
 - **The deny rules are prefix matches.** They catch the plain spellings (`git push --force ...`). Reordered or wrapped spellings (`git push origin dev --force`, `bash -c "..."`) are caught by the guard, not by the deny rules.
 - **Codex** has no PreToolUse equivalent here. It is bound by AGENTS.md and by the git hooks (once enabled in the clone it uses) and the rulesets.
-- **The guard needs Python** on the machine that runs Claude Code (it was 3.14 here). This adds no npm dependency, and CI does not run the guard tests.
+- **The guard needs Python** on the machine that runs Claude Code (it was 3.14 here). This adds no npm dependency. (Since the review fixes, CI runs the guard and hook tests too.)
 
 ## What Daniel must configure
 
@@ -139,4 +139,38 @@ git config --get core.hooksPath   # must print .githooks
 
 ## CI result
 
-Pending: CI runs after the push to `origin/dev`, which this session could not do (see above). Record the run here once it is green.
+Pushed to `origin/dev` on 2026-11-23 from a session opened in this repo (`4bd1b7c..bba0864`). All three git hooks ran on the commit and passed it; `pre-push` passed the push.
+
+| Commit | Run | Result |
+|--------|-----|--------|
+| `bba0864` ci: add git guardrails and the ci workflow | [45192576151](https://github.com/Dher10/danielherdenez-site/actions/runs/45192576151) | **Failed** at "Install Playwright chromium": `ubuntu-latest` now resolves to Ubuntu 26.04, and Playwright 1.60 cannot install chromium there (`Playwright does not support chromium on ubuntu26.04-x64`). Install, lint, type check and build passed. |
+| `67db0e0` ci: pin the runner to ubuntu-24.04 for playwright | [45193147070](https://github.com/Dher10/danielherdenez-site/actions/runs/45193147070) | **Passed.** Every step green; Playwright 91 passed. |
+
+The runner is pinned to `ubuntu-24.04` (approved by Daniel). Returning to `ubuntu-latest` after a Playwright upgrade is backlog item F.
+
+The `ci` check now exists on GitHub, so the rulesets above can require it.
+
+## Review fixes (Codex review, 2026-11-23)
+
+Codex reviewed `67db0e0` plus the staged report and AGENTS.md changes: **FAIL**, four major and two minor findings (`docs/runs/2026-11-23-A-codex-review.md`). For each finding that could be fixed in code, the test reproducing Codex's case was written first and failed on the old code (46 guard tests and 4 hook tests failed), then the fix made it pass.
+
+| # | Finding | Fix | Test |
+|---|---------|-----|------|
+| 1 | Major. The guard missed the current `git config` write syntax: it read the first word as the key, so `git config set core.hooksPath x` and `git config unset core.hooksPath` passed. | `git_guard.py`: `_config_problem` reads both syntaxes. It finds the verb (`set`, `unset`, `get`, `list`, `edit`, `rename-section`, `remove-section`), skips the options that take a value (`--file x`, `-f x`, `--type x`, `--comment x`, `--value x`, `--url x`, `--blob x`, `--default x`) so their value is never read as the key, and compares keys without case. Blocked: writing or unsetting `core.hooksPath`, `include.path` and `includeIf.*.path` (an included file could set `core.hooksPath`); `git config edit` / `-e` (an editor can change any key); renaming or removing the `core`, `user` and `include` sections; unsetting the identity or setting it to anyone else; `--config-env` overrides of `core.hooksPath`; `-c include.path=`. Reads (`git config get core.hooksPath`, `--get`, `list`) and unrelated writes still pass. `settings.json`: deny rules for `git config set core.hooksPath` and `git config unset core.hooksPath` on both shell tools. | `test_git_guard.py`: `test_every_config_write_syntax_that_reaches_the_hooks_or_the_identity_is_blocked` (30 cases, Codex's first), `test_config_reads_and_unrelated_writes_still_pass` (16), `test_the_deny_rules_also_cover_the_current_config_syntax` |
+| 2 | Major. The guard read the branch and config of the hook process's own directory, not of the target checkout: `git -C other status` lost the path. | `git_guard.py`: `Invocation` keeps `-C`, `--git-dir`, `--work-tree` (and `GIT_DIR`, `GIT_WORK_TREE`) as `location`. `decide` tracks `cd`, `Set-Location`, `pushd` across the command line. Every lookup (branch, config, tags, `--contains HEAD`) runs with those options, starting from the session's `cwd` in the hook input. A mutating command in a checkout the guard cannot name (`-C $x`, `cd $x`, `cd -`, `popd`) is blocked, and so is a commit or merge when the branch of the target checkout cannot be read. Reads in such a checkout still pass. | `test_git_dash_c_keeps_the_checkout_path` (Codex's case), `test_a_commit_in_another_checkout_follows_that_checkouts_branch` (7), `test_the_location_is_passed_to_every_lookup`, `test_a_mutation_in_a_checkout_the_guard_cannot_name_is_blocked` (5), `test_a_read_in_a_checkout_the_guard_cannot_name_still_passes` (3), `test_a_branch_that_cannot_be_read_blocks_a_commit`; with real git, two throwaway checkouts on `dev` and `main`: `test_real_checkouts_on_different_branches_are_told_apart`, `test_the_script_reads_the_branch_of_the_session_directory` |
+| 3 | Major. An automatic merge commit runs `pre-merge-commit`, not `pre-commit`; the repo had none, and `commit-msg` checked only the email, so `git merge --no-ff` on `main` went through. | `.githooks/owner-check.sh` (new, not a hook): the branch and full identity check (name and email, author and committer). `pre-commit`, the new `pre-merge-commit` and `commit-msg` all source it. The fast-forward sync creates no commit and is unaffected. | `test_githooks.py` (real git, throwaway repos, hooks copied into `.git/hooks`): `test_an_automatic_merge_commit_on_main_is_blocked` (Codex's case), `test_an_automatic_merge_commit_with_another_name_is_blocked_on_dev`, `test_a_merge_commit_by_the_owner_on_dev_passes`, `test_the_documented_fast_forward_sync_still_works`, `test_commit_msg_checks_the_name_and_the_branch_too`, `test_a_plain_commit_on_main_is_still_blocked_and_on_dev_passes` |
+| 4 | Major. The rulesets do not enforce that only Daniel merges. | **Accepted residual risk**, documented in AGENTS.md ("Guardrails de git"). The agents use Daniel's credentials, so GitHub cannot tell them from him. The control is local: the guard blocks `gh pr merge` (and `--auto`), `gh pr review`, every non-GET `gh api` call (including the merge endpoints and the GraphQL `mergePullRequest` / `enablePullRequestAutoMerge` mutations), non-GET `curl` calls to the API, and pushes to `main`. No bot account. The review suggested only credential separation, which is out of scope here, so no further local tightening was needed. The regression tests now pin every merge path down. | `test_every_merge_path_the_agents_could_use_is_blocked` (12 cases; all already passed on the old code, which confirms the existing control) |
+| 5 | Minor. CI leaves the checkout credential available to later steps. | `ci.yml` (approved by Daniel): `persist-credentials: false` on the checkout step. | The `ci` run of this commit (no later step needs the token, so the job passing is the check) |
+| 6 | Minor. The hooks were `100644` in the index, so git on POSIX would ignore them. | `git update-index --chmod=+x` on all four hooks: `100755`. `owner-check.sh` is sourced, not run, and stays `100644`. | `test_every_hook_is_executable_in_the_index`; `test_a_fresh_posix_clone_checks_the_hooks_out_executable` (skipped on Windows; runs in CI on Ubuntu) |
+
+The 38 fed-input checks of layer 1 above are now automated in `test_githooks.py` (`test_commit_msg_accepts_and_rejects_messages_as_the_report_lists`, `test_pre_push_accepts_and_rejects_refs_as_the_report_lists`, `test_pre_commit_rejects_each_foreign_identity_field`), plus one case for the subject `docs: record unit A ci result`, which `commit-msg` rightly rejects (capital A).
+
+CI now also runs the guard and hook tests: a "Guard and hook tests" step (`pipx run pytest .claude/hooks -q -rs`) right after checkout, on `ubuntu-24.04`, so the POSIX-only test runs there (approved by Daniel). Before this, CI did not run these tests.
+
+**Decision (Daniel): tag creation stays allowed on GitHub.** The tag ruleset restricts updates and deletions but not creation, on purpose: Daniel creates release tags. The agents are blocked from creating or pushing tags locally by the guard and by `pre-push`. This is a decision, not an open finding. It replaces the "restrict creations" in setup step 3 above.
+
+### Verification (review fixes)
+
+- `python -m pytest .claude/hooks -q`: **693 passed, 1 skipped** (the POSIX clone test, on Windows)
+- `npm run lint`: exit 0 · `npx tsc --noEmit`: exit 0 · `npm run build`: exit 0
+- `npx playwright test` with the default settings against a fresh `next start -p 3000` of this build, as in CI: **91 passed**. A leftover `next start` from an earlier session held port 3000 and was stopped first (with Daniel's approval). With it running, Playwright had silently reused that older server.

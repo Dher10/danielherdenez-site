@@ -30,12 +30,23 @@ OWNER = {"user.name": "Daniel Herdenez", "user.email": "edherdenez@gmail.com"}
 class FakeGit:
     """The answers of the repository: current branch, config, tags and whether HEAD is on a remote."""
 
-    def __init__(self, branch="dev", config=None, tags=("v1.0.0-kaggle",), pushed=False):
+    def __init__(self, branch="dev", config=None, tags=("v1.0.0-kaggle",), pushed=False, checkouts=None):
         self.branch, self.config, self.tags, self.pushed = branch, dict(OWNER if config is None else config), tags, pushed
+        self.checkouts = dict(checkouts or {})  # location (the value of -C, --git-dir, --work-tree) -> its current branch
+        self.locations: list[tuple[str, ...]] = []  # the location options of every call, for the tests that check them
 
     def __call__(self, *args: str) -> str:
+        branch, location = self.branch, []
+        while args and (args[0] in ("-C", "--git-dir", "--work-tree") or args[0].startswith(("--git-dir=", "--work-tree="))):
+            name, _, value = args[0].partition("=")
+            step = 1 if value else 2
+            value = value or args[1]
+            location.extend(args[:step])
+            branch = self.checkouts.get(value, branch)
+            args = args[step:]
+        self.locations.append(tuple(location))
         if args[:2] == ("branch", "--show-current"):
-            return self.branch
+            return branch
         if args[:1] == ("config",):
             if args[1] not in self.config:
                 raise subprocess.CalledProcessError(1, "git config")
@@ -1001,3 +1012,206 @@ def test_the_deny_rules_cover_both_shell_tools():
     for rule in ("gh pr merge:*", "git push origin main:*", "git push --force:*", "git rebase:*", "git commit --no-verify:*",
                  "git config core.hooksPath :*", "git branch -D:*", "git tag -d:*", "git push --delete:*"):
         assert f"Bash({rule})" in deny and f"PowerShell({rule})" in deny, rule
+
+
+# --- Unit A review fixes (docs/runs/2026-11-23-A-codex-review.md) -----------------------------------------------
+# Each block starts with the case Codex reported, then the variations around it.
+
+# Finding 1: the current `git config <verb>` syntax, and the options that take a value before the key.
+@pytest.mark.parametrize(
+    "command,why",
+    [
+        ("git config set core.hooksPath /tmp/none", "hooksPath"),  # Codex's case: the verb before the key
+        ("git config unset core.hooksPath", "hooksPath"),  # Codex's case
+        ("git config set --global core.hooksPath /tmp/none", "hooksPath"),
+        ("git config unset --local core.hooksPath", "hooksPath"),
+        ("git config set --append core.hooksPath /tmp/none", "hooksPath"),
+        ("git config set --all --value=x core.hooksPath /tmp/none", "hooksPath"),
+        ("git config --file .git/config core.hooksPath /tmp/none", "hooksPath"),  # the file name is not the key
+        ("git config -f .git/config core.hooksPath /tmp/none", "hooksPath"),
+        ("git config --type path core.hooksPath /tmp/none", "hooksPath"),
+        ("git config --comment note core.hooksPath /tmp/none", "hooksPath"),
+        ("git config CORE.HOOKSPATH /tmp/none", "hooksPath"),  # section and key names ignore case
+        ("git config --unset-all core.hooksPath", "hooksPath"),
+        ("git config set user.name 'Someone Else'", "not changed"),
+        ("git config set --global user.email other@example.com", "not changed"),
+        ("git config unset user.email", "not changed"),
+        ("git config --unset user.name", "not changed"),
+        ("git config -f .git/config user.email other@example.com", "not changed"),
+        ("git config edit", "edit"),  # an editor can change any key, core.hooksPath included
+        ("git config edit --local", "edit"),
+        ("git config --edit", "edit"),
+        ("git config -e", "edit"),
+        ("git config remove-section core", "section"),
+        ("git config --remove-section core", "section"),
+        ("git config rename-section core old", "section"),
+        ("git config remove-section user", "section"),
+        ("git config set include.path /tmp/hooks.cfg", "include"),  # an included file could set core.hooksPath
+        ("git config include.path /tmp/hooks.cfg", "include"),
+        ("git config set includeIf.gitdir:C:/Dev/.path /tmp/hooks.cfg", "include"),
+        ("git --config-env=core.hooksPath=HOOKS commit -m 'feat: x'", "hooksPath"),
+        ("git --config-env core.hooksPath=HOOKS commit -m 'feat: x'", "hooksPath"),
+    ],
+)
+def test_every_config_write_syntax_that_reaches_the_hooks_or_the_identity_is_blocked(command, why):
+    reason = verdict(command)
+
+    assert reason is not None and why in reason, (command, reason)
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git config get core.hooksPath",  # the documented check, in the current syntax
+        "git config get --show-origin core.hooksPath",
+        "git config get --all core.hooksPath",
+        "git config core.hooksPath",
+        "git config --get core.hooksPath",
+        "git config --file .git/config --get core.hooksPath",
+        "git config list",
+        "git config list --show-origin",
+        "git config --list",
+        "git config -l",
+        "git config get user.name",
+        "git config --get-regexp '^core'",
+        "git config set user.name 'Daniel Herdenez'",
+        f"git config set user.email {OWNER['user.email']}",
+        "git config set core.autocrlf true",
+        "git config --file .gitmodules --get submodule.x.url",
+    ],
+)
+def test_config_reads_and_unrelated_writes_still_pass(command):
+    assert verdict(command) is None, command
+
+
+def test_the_deny_rules_also_cover_the_current_config_syntax():
+    settings = json.loads((HOOK.parents[1] / "settings.json").read_text(encoding="utf-8"))
+    deny = set(settings["permissions"]["deny"])
+
+    for rule in ("git config set core.hooksPath:*", "git config unset core.hooksPath:*"):
+        assert f"Bash({rule})" in deny and f"PowerShell({rule})" in deny, rule
+
+
+# Finding 2: the branch and config of the checkout the command runs in, not of the hook's own directory.
+def test_git_dash_c_keeps_the_checkout_path():
+    inv = guard.Invocation(["git", "-C", "scratch-checkout", "status"])  # Codex's case: the path was dropped
+
+    assert inv.sub == "status" and inv.location == ["-C", "scratch-checkout"] and inv.location_known
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git -C ../release commit -m 'feat: x'",
+        "git --git-dir=../release/.git commit -m 'feat: x'",
+        "git --work-tree ../release --git-dir ../release/.git merge dev",
+        "GIT_DIR=../release/.git git commit -m 'feat: x'",
+        "cd ../release && git commit -m 'feat: x'",
+        "Set-Location ../release; git commit -m 'feat: x'",
+        "cd ../release && git pull --ff-only origin main",  # the sync is allowed only when that checkout is on dev
+    ],
+)
+def test_a_commit_in_another_checkout_follows_that_checkouts_branch(command):
+    reason = guard.decide(command, FakeGit(branch="dev", checkouts={"../release": "main", "../release/.git": "main"}))
+
+    assert reason is not None and ("current branch is 'main'" in reason or "release branch" in reason), (command, reason)
+
+
+def test_the_location_is_passed_to_every_lookup():
+    git = FakeGit(branch="main", checkouts={"../work": "dev"})
+
+    assert guard.decide("git -C ../work commit -m 'feat: x'", git) is None
+    assert guard.decide("cd ../work && git pull --ff-only origin main", git) is None
+    assert all(location[:2] == ("-C", "../work") for location in git.locations), git.locations
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "git -C $target commit -m 'feat: x'",
+        "git -C \"$(pwd)/x\" commit -m 'feat: x'",
+        "cd $target && git commit -m 'feat: x'",
+        "cd - && git merge dev",
+        "popd && git commit -m 'feat: x'",
+    ],
+)
+def test_a_mutation_in_a_checkout_the_guard_cannot_name_is_blocked(command):
+    reason = verdict(command)
+
+    assert reason is not None and "which checkout" in reason, (command, reason)
+
+
+@pytest.mark.parametrize("command", ["git -C $target status", "cd $target && git log -1", "git -C $target config --get core.hooksPath"])
+def test_a_read_in_a_checkout_the_guard_cannot_name_still_passes(command):
+    assert verdict(command) is None, command
+
+
+def test_a_branch_that_cannot_be_read_blocks_a_commit():
+    class Broken(FakeGit):
+        def __call__(self, *args):
+            if "branch" in args:
+                raise subprocess.CalledProcessError(128, "git branch")
+            return super().__call__(*args)
+
+    reason = guard.decide("git -C ../gone commit -m 'feat: x'", Broken())
+
+    assert reason is not None and "branch" in reason
+
+
+def _git(*args, cwd=None):
+    return subprocess.run(["git", *args], cwd=cwd, capture_output=True, text=True, check=True).stdout.strip()
+
+
+@pytest.fixture
+def two_checkouts(tmp_path):
+    """Two disposable repositories, one on dev and one on main, with the owner's identity."""
+
+    paths = {}
+    for name, branch in (("work", "dev"), ("release", "main")):
+        path = tmp_path / name
+        _git("init", "-q", "-b", branch, str(path))
+        for key, value in OWNER.items():
+            _git("config", key, value, cwd=path)
+        paths[name] = path.as_posix()
+    return paths
+
+
+def test_real_checkouts_on_different_branches_are_told_apart(two_checkouts):
+    work, release = two_checkouts["work"], two_checkouts["release"]
+    from_work = lambda *args: guard.run_git("-C", work, *args)  # noqa: E731 - the hook running in the dev checkout
+
+    # quoted: pytest's temporary directory can hold a space (`pytest-of-<user name>`)
+    assert "current branch is 'main'" in guard.decide(f'git -C "{release}" commit -m "feat: x"', from_work)
+    assert "current branch is 'main'" in guard.decide(f'cd "{release}" && git commit -m "feat: x"', from_work)
+    assert guard.decide(f'git -C "{work}" commit -m "feat: x"', lambda *a: guard.run_git("-C", release, *a)) is None
+
+
+def test_the_script_reads_the_branch_of_the_session_directory(two_checkouts):
+    event = {"tool_name": "Bash", "cwd": two_checkouts["release"], "tool_input": {"command": "git commit -m 'feat: x'"}}
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    result = subprocess.run([sys.executable, str(HOOK)], input=json.dumps(event), capture_output=True, text=True,
+                            cwd=two_checkouts["work"], env=env)
+
+    assert result.returncode == 2 and "current branch is 'main'" in result.stderr, result.stderr
+
+
+# Finding 4: merging stays the owner's. GitHub cannot tell the agents from Daniel (same credentials), so these are the control.
+@pytest.mark.parametrize(
+    "command",
+    [
+        "gh pr merge 7 --merge",
+        "gh pr merge --auto --merge",
+        "gh pr review 7 --approve",
+        "gh api -X PUT repos/Dher10/danielherdenez-site/pulls/7/merge",
+        "gh api --method PUT repos/Dher10/danielherdenez-site/pulls/7/merge",
+        "gh api repos/Dher10/danielherdenez-site/merges -f base=main -f head=dev",
+        "gh api graphql -f query='mutation { mergePullRequest(input: {pullRequestId: \"x\"}) { clientMutationId } }'",
+        "gh api graphql -f query='mutation { enablePullRequestAutoMerge(input: {pullRequestId: \"x\"}) { clientMutationId } }'",
+        "gh api -X PUT repos/Dher10/danielherdenez-site/rulesets/27921035",
+        "curl -X PUT https://api.github.com/repos/Dher10/danielherdenez-site/pulls/7/merge",
+        "git push origin dev:main",
+        "git push origin HEAD:refs/heads/main",
+    ],
+)
+def test_every_merge_path_the_agents_could_use_is_blocked(command):
+    assert verdict(command) is not None, command

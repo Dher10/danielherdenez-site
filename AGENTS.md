@@ -50,19 +50,25 @@ Nunca: commit o push a `main`, force-push, rebase, `reset --hard`, `--no-verify`
 Varias líneas; cada una cubre lo que la otra no ve:
 
 - **Hooks de git versionados** en `.githooks/` (aplican a cualquier agente y a la terminal: Claude Code, Codex, Daniel):
-  - `pre-commit`: rechaza commits en `main`/`master` y autor o committer distinto de Daniel Herdenez <edherdenez@gmail.com>.
-  - `commit-msg`: rechaza Co-Authored-By, "Generated with", Claude-Session/Codex-Session/Assisted-by, Signed-off-by de una herramienta y direcciones noreply de una IA; exige el formato convencional y un cuerpo.
+  - `pre-commit`: rechaza commits en `main`/`master` y autor o committer distinto de Daniel Herdenez <edherdenez@gmail.com> (nombre y correo).
+  - `pre-merge-commit`: el mismo chequeo para el merge commit automático de `git merge`, que no pasa por `pre-commit`. El fast-forward del sync no crea commit y no lo dispara.
+  - `owner-check.sh`: no es un hook; es el chequeo de rama e identidad que comparten `pre-commit`, `pre-merge-commit` y `commit-msg`.
+  - `commit-msg`: repite el chequeo de rama e identidad; rechaza Co-Authored-By, "Generated with", Claude-Session/Codex-Session/Assisted-by, Signed-off-by de una herramienta y direcciones noreply de una IA; exige el formato convencional y un cuerpo.
   - `pre-push`: solo deja empujar a `dev` o `experiment/*`; rechaza `main`, tags, borrar ramas o tags y cualquier push que no sea fast-forward.
   - **Activarlos una vez por clon** (un clon nuevo no los trae activos): `git config core.hooksPath .githooks`. Comprobar con `git config --get core.hooksPath` (debe decir `.githooks`). Los agentes no cambian este valor; lo hace Daniel.
   - `.gitattributes` fuerza LF en `.githooks/*`: con `core.autocrlf=true` un hook con CRLF no corre en Windows.
-- **Claude Code:** `.claude/settings.json` cablea `.claude/hooks/git_guard.py` (portado de PitchCraft) como PreToolUse en Bash y PowerShell, más reglas `deny` como primera capa. El guard lee git y `gh` también detrás de envoltorios (`bash -c`, `powershell -Command`, `cmd /c`, `eval`, `python -c`, `Invoke-Expression`, nombres armados en tiempo de ejecución) y los bloquea si no los puede leer: correr git directo. Tests: `python -m pytest .claude/hooks -q`.
+  - Los cuatro hooks van con modo ejecutable (`100755`) en el índice: en POSIX git ignora un hook sin el bit de ejecución. Un hook nuevo se agrega con `git update-index --chmod=+x`.
+  - Tests de los hooks (git real en repos desechables): `.claude/hooks/test_githooks.py`, dentro del mismo `python -m pytest .claude/hooks -q`.
+- **Claude Code:** `.claude/settings.json` cablea `.claude/hooks/git_guard.py` (portado de PitchCraft) como PreToolUse en Bash y PowerShell, más reglas `deny` como primera capa. El guard lee git y `gh` también detrás de envoltorios (`bash -c`, `powershell -Command`, `cmd /c`, `eval`, `python -c`, `Invoke-Expression`, nombres armados en tiempo de ejecución) y los bloquea si no los puede leer: correr git directo. Lee `git config` en la sintaxis actual (`set`, `unset`, `edit`, `remove-section`...) y en la vieja. Consulta rama y config en el checkout donde corre el comando (`-C`, `--git-dir`, `--work-tree`, `cd`, y el directorio de la sesión), y bloquea una mutación si no puede nombrar ese checkout. Tests: `python -m pytest .claude/hooks -q`.
 - **Codex** sigue estas mismas reglas por este archivo; los hooks de git lo frenan igual que a Claude Code.
 - **GitHub:** rulesets en `main` y `dev` y el check requerido `ci` (`.github/workflows/ci.yml`) son la línea del servidor. Qué configurar: `docs/runs/2026-11-21-A-git-guardrails.md`.
+- **Riesgo residual aceptado: el merge "solo Daniel" no lo hace cumplir GitHub.** Los agentes usan las credenciales de Daniel (`gh` y git autenticados como él), así que GitHub no los distingue de Daniel: los rulesets exigen PR y `ci` en verde, pero no pueden exigir quién mergea. El control es local: el guard bloquea `gh pr merge` (también `--auto`), `gh pr review`, todo `gh api` que no sea GET (incluidos `PUT .../pulls/N/merge`, `POST .../merges` y las mutaciones GraphQL `mergePullRequest` y `enablePullRequestAutoMerge`) y el push a `main`. No se crea una cuenta bot. Codex no tiene ese guard: lo ata este archivo.
 
 ## Estado del proyecto
 
 - `docs/BACKLOG.md`: las unidades de trabajo (A, B, C...) y su estado. Leerlo al empezar una sesión.
 - `docs/runs/`: un reporte por unidad terminada (qué cambió, cómo se verificó, qué quedó pendiente). El estado vive en estos archivos, no en el contexto de la sesión.
+- Los reportes de corrida se actualizan en el working tree y viajan con el siguiente commit sustantivo de la unidad; no se hace commit ni push solo para registrar resultados.
 
 ## Dos Playwright distintos — no confundir
 

@@ -1,28 +1,20 @@
 #!/bin/sh
 # commit-msg: runs on every local commit, from any tool (Claude Code, Codex, terminal).
 # Adapted from PitchCraft's commit-msg hook (C:\Dev\pitchcraft-agent\.githooks\commit-msg).
-#   1. Author and committer must be the owner (second line after pre-commit).
+#   1. Branch and identity: the same check as pre-commit and pre-merge-commit (owner-check.sh), as a
+#      second line that also covers merge commits.
 #   2. Any AI attribution is rejected (PitchCraft strips it; here the commit is refused so the
 #      writer sees it and fixes the message).
 #   3. The subject must be conventional: type: lowercase imperative summary, plus a body.
 
 MSG_FILE="$1"
-OWNER_EMAIL="edherdenez@gmail.com"
+
+. "$(dirname "$0")/owner-check.sh" || exit 1
+owner_check commit-msg || exit 1
 
 # The message is read in the C locale so the result does not depend on the shell's locale
 # (Git for Windows' grep missed `[^[:alnum:]]*` over an emoji under UTF-8; PitchCraft QA2-05).
 in_c() { LC_ALL=C "$@"; }
-
-email_of() { git var "$1" | sed -E 's/^.*<([^>]*)>.*$/\1/'; }
-AUTHOR_EMAIL=$(email_of GIT_AUTHOR_IDENT)
-COMMITTER_EMAIL=$(email_of GIT_COMMITTER_IDENT)
-
-if [ "$AUTHOR_EMAIL" != "$OWNER_EMAIL" ] || [ "$COMMITTER_EMAIL" != "$OWNER_EMAIL" ]; then
-  echo "commit-msg: blocked. Author/committer must be $OWNER_EMAIL." >&2
-  echo "  author:    $AUTHOR_EMAIL" >&2
-  echo "  committer: $COMMITTER_EMAIL" >&2
-  exit 1
-fi
 
 CONTENT=$(in_c grep -v '^#' < "$MSG_FILE")
 
