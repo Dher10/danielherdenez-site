@@ -214,3 +214,29 @@ Files: `.claude/hooks/git_guard.py`, `.claude/hooks/test_git_guard.py`, `AGENTS.
 - `python -m pytest .claude/hooks -q`: **807 passed, 1 skipped** (the POSIX clone test, on Windows)
 - `npm run lint`: exit 0 · `npx tsc --noEmit`: exit 0 · `npm run build`: exit 0
 - Playwright: **91 passed**, against a fresh `next start` of this build. Port 3000 was taken by a `next start` this session did not start (started 19:54 today), so it was left running and the fresh server ran on port 3001 (`PLAYWRIGHT_BASE_URL=http://localhost:3001`). The config's `webServer` check still saw port 3000 and launched nothing.
+- CI on `1e248ca` fix: make the git guard fail closed: [45319580375](https://github.com/Dher10/danielherdenez-site/actions/runs/45319580375) **passed**. "Guard and hook tests": 808 passed, none skipped (the POSIX clone test ran). Playwright: 91 passed.
+
+## Final verification and close (Codex, 2026-11-24)
+
+Codex verified `1e248ca`: **FAIL**, one case (`docs/runs/2026-11-24-A-codex-verify-2.md`). Every other check passed: the round 2 regressions, config writes, `hooksPath` overrides, pushes to `main`, and the daily commands on `dev`.
+
+**The case:** with an in-memory git runner, the guard let a new branch be created (`scratch`) when `git branch --show-current` failed and when HEAD was detached. A commit was blocked in both situations. Branch creation never asked for the current branch.
+
+**Fix:** a branch creation (`git branch <name>`, `git checkout -b/-B/--orphan`, `git switch -c/-C/--create/--force-create`) now reads the current branch of its checkout first. If the read fails, or HEAD is detached, the command is blocked, the same way a commit is. Nothing else in the guard changed. Tests: `test_final_branch_creation_is_blocked_when_the_branch_lookup_fails` and `test_final_branch_creation_is_blocked_on_a_detached_head` (Codex's two conditions, for each of the three spellings) and `test_final_branch_creation_on_dev_still_passes`.
+
+**The 8 errors in Codex's run** were environment-only. They were setup errors: Windows denied pytest access to its temporary directories. No guard test failed. CI on Linux runs the full suite on every push to `dev`.
+
+### Closing state of the unit
+
+This was the last review round, as agreed.
+
+- **Findings:** all closed. That covers the Codex review (2026-11-23), both verifications and this last case.
+- **Residual risk, accepted:** agents use Daniel's credentials, so GitHub cannot tell an agent's merge from Daniel's. The rulesets require a PR and a green `ci`, but they cannot require who merges. No bot account is created.
+- **Primary protection:** the GitHub rulesets on `main` and `dev` and the required `ci` check. This is the server side; it holds whatever runs locally.
+- **Second layer:** the local guard (`.claude/hooks/git_guard.py`, Claude Code only) and the versioned git hooks (`.githooks/`, any client). They stop mistakes before they reach GitHub. They are not a security boundary against a tool that runs git some other way.
+
+### Verification (final)
+
+- `python -m pytest .claude/hooks -q`: **816 passed, 1 skipped** (the POSIX clone test, on Windows)
+- `npm run lint`: exit 0 · `npx tsc --noEmit`: exit 0 · `npm run build`: exit 0
+- Playwright: **91 passed**, against a fresh `next start` of this build on port 3001 (`PLAYWRIGHT_BASE_URL=http://localhost:3001`). Port 3000 was still held by the `next start` this session did not start. A first run also gave 91 passed, but it hit a server started before the build finished. That run does not count: the server was stopped and the suite ran again.

@@ -666,6 +666,13 @@ def _problem(inv: Invocation, git: GitRunner) -> str | None:
             return f"{arg!r} is the release branch: only the owner touches it (AGENTS.md)"
         if arg in tags or arg.startswith(("refs/tags/", "tags/")):
             return f"{arg!r} is a tag: tags are frozen (AGENTS.md)"
+    if _creates_branch(inv):
+        try:
+            branch = git("branch", "--show-current")
+        except Exception:  # noqa: BLE001 - the branch of the target checkout cannot be read: fail closed
+            return "the current branch of the target checkout cannot be read, so no branch is created (AGENTS.md)"
+        if not branch:
+            return f"HEAD is detached in the target checkout: git {sub} creates a branch only from a named branch (AGENTS.md)"
     if sub in COMMITTING | {"pull", "cherry-pick", "revert", "am", "reset", "commit", "merge"}:
         try:
             branch = git("branch", "--show-current")
@@ -676,6 +683,20 @@ def _problem(inv: Invocation, git: GitRunner) -> str | None:
         if _is_protected(branch):
             return f"the current branch is {branch!r}: nothing is committed or merged there (AGENTS.md)"
     return None
+
+
+BRANCH_CREATING_FLAGS = {"-b", "-B", "-c", "-C", "--create", "--force-create", "--orphan"}
+
+
+def _creates_branch(inv: Invocation) -> bool:
+    """`git branch <name>`, `git checkout -b`, `git switch -c` (and their forms): a new branch from the current HEAD."""
+
+    names = {flag.partition("=")[0] for flag in inv.flags()}
+    if inv.sub == "branch":
+        return bool(inv.positional()) and _is_write(inv) and not names & BRANCH_REMOVING_FLAGS
+    if inv.sub in ("checkout", "switch"):
+        return bool(names & BRANCH_CREATING_FLAGS) or any(re.fullmatch(r"-[a-zA-Z]*[bBcC]", f) for f in inv.flags())
+    return False
 
 
 def _guarded_key(key: str) -> str | None:

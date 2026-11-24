@@ -1421,3 +1421,30 @@ def test_round2_simple_literal_commands_on_dev_still_pass(command):
     git = FakeGit(branch="dev", checkouts={"../work": "dev"})
 
     assert guard.decide(command, git) is None, command
+
+
+# --- final verification (Codex, 2026-11-24): branch creation when the current branch is not certain ------------------------
+
+
+class _UnreadableBranch(FakeGit):
+    def __call__(self, *args):
+        if "--show-current" in args:
+            raise subprocess.CalledProcessError(128, "git branch")
+        return super().__call__(*args)
+
+
+@pytest.mark.parametrize("command", ["git branch scratch", "git checkout -b scratch", "git switch -c scratch"])
+def test_final_branch_creation_is_blocked_when_the_branch_lookup_fails(command):
+    reason = guard.decide(command, _UnreadableBranch())
+
+    assert reason is not None and "cannot be read" in reason, (command, reason)
+
+
+@pytest.mark.parametrize("command", ["git branch scratch", "git checkout -b scratch", "git switch -c scratch"])
+def test_final_branch_creation_is_blocked_on_a_detached_head(command):
+    assert "detached" in (verdict(command, branch="") or ""), command
+
+
+@pytest.mark.parametrize("command", ["git branch scratch", "git checkout -b scratch", "git switch -c scratch"])
+def test_final_branch_creation_on_dev_still_passes(command):
+    assert verdict(command) is None, command
