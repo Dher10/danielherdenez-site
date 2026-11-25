@@ -78,6 +78,17 @@ This unit was not backlog item F (CI runner). It closes backlog C, the facts lin
 
   No test that existed before this unit failed.
 
+### CI
+
+- **Run [45522615321](https://github.com/Dher10/danielherdenez-site/actions/runs/45522615321) on `635489d`: failed.** Guard and hook tests: 817 passed. Playwright: 109 passed, 3 failed, all on `/work/pitchcraft` with JavaScript disabled:
+  - `serves Article JSON-LD without JavaScript` (pre-existing test, first failure);
+  - the two new no-JS reveal tests.
+
+  Each hit the 30 s timeout in `page.goto`: the page rendered and the cover had started painting, but `load` never fired. Without JavaScript, Chromium also disables lazy-loading, so the load event waits for every image on the page.
+- **Not reproduced locally.** A cold image cache, single and three concurrent no-JS loads all fired `load` in under 0.4 s.
+- **A real defect turned up in the trace.** The desktop `<source>` had no `sizes`, so the browser assumed 100vw and requested the 1920 w rendition for an 832 px slot. Fixed: each `<source>` carries its own `sizes`, and the cover test asserts at most 1080 w at 1280 px. This is the only image request that changed size on that path, so it is the likely cause, but it is not confirmed.
+- The result of the next CI run is recorded below.
+
 ## Left open
 
 - **Backlog B (E13 copy)** needs Daniel's decision on copy.

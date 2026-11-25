@@ -76,7 +76,7 @@ const COVER_ALT =
  */
 function Cover() {
   const {
-    props: { srcSet: desktop },
+    props: { srcSet: desktop, sizes: desktopSizes },
   } = getImageProps({
     alt: COVER_ALT,
     src: '/work/pitchcraft/pitchcraft-game5-desktop.webp',
@@ -85,7 +85,7 @@ function Cover() {
     sizes: '(min-width: 1024px) 832px, calc(100vw - 96px)',
   });
   const {
-    props: { srcSet: phone, ...rest },
+    props: { srcSet: phone, sizes: phoneSizes, ...rest },
   } = getImageProps({
     alt: COVER_ALT,
     src: '/work/pitchcraft/pitchcraft-game5-cover-phone.webp',
@@ -95,8 +95,10 @@ function Cover() {
   });
   return (
     <picture>
-      <source media="(min-width: 768px)" srcSet={desktop} width={1441} height={900} />
-      <source media="(max-width: 767px)" srcSet={phone} width={750} height={1612} />
+      {/* Each <source> needs its own sizes; without it the browser assumes
+          100vw and fetches an oversized rendition. */}
+      <source media="(min-width: 768px)" srcSet={desktop} sizes={desktopSizes} width={1441} height={900} />
+      <source media="(max-width: 767px)" srcSet={phone} sizes={phoneSizes} width={750} height={1612} />
       {/* eslint-disable-next-line jsx-a11y/alt-text -- alt comes from getImageProps in rest */}
       <img {...rest} loading="eager" fetchPriority="high" />
     </picture>

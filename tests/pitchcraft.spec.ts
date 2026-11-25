@@ -46,6 +46,9 @@ test.describe('PitchCraft case study', () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto(ROUTE);
     await expect.poll(() => cover.evaluate((img: HTMLImageElement) => img.currentSrc)).toContain('game5-desktop');
+    // sizes reaches the <source>: an 832px slot at DPR 1 never needs the 1920w rendition.
+    const width = Number(new URL(await cover.evaluate((img: HTMLImageElement) => img.currentSrc)).searchParams.get('w'));
+    expect(width).toBeLessThanOrEqual(1080);
   });
 
   test('before and after crops share height and scale; stacked on mobile', async ({ page }) => {
