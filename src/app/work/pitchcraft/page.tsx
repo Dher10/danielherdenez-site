@@ -295,9 +295,10 @@ export default function PitchcraftPage() {
                           <p>Before</p>
                           <Image
                             src="/work/pitchcraft/pitchcraft-game5-before-crop.webp"
-                            alt="The old daily view on a phone: a list of games, a matchup headline and the two starters' season stats."
+                            alt="The old daily view on a phone: a matchup headline and the two starters' season stats."
                             width={375}
                             height={946}
+                            loading="eager"
                             sizes="(min-width: 768px) 320px, calc(100vw - 64px)"
                           />
                         </div>
@@ -308,6 +309,7 @@ export default function PitchcraftPage() {
                             alt="The new game page on a phone: the final score in a scoreboard panel, the reasons the game is notable and both starters' final lines."
                             width={750}
                             height={1892}
+                            loading="eager"
                             sizes="(min-width: 768px) 320px, calc(100vw - 64px)"
                           />
                         </div>

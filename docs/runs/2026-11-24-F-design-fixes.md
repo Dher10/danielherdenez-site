@@ -87,7 +87,7 @@ This unit was not backlog item F (CI runner). It closes backlog C, the facts lin
   Each hit the 30 s timeout in `page.goto`: the page rendered and the cover had started painting, but `load` never fired. Without JavaScript, Chromium also disables lazy-loading, so the load event waits for every image on the page.
 - **Not reproduced locally.** A cold image cache, single and three concurrent no-JS loads all fired `load` in under 0.4 s.
 - **A real defect turned up in the trace.** The desktop `<source>` had no `sizes`, so the browser assumed 100vw and requested the 1920 w rendition for an 832 px slot. Fixed: each `<source>` carries its own `sizes`, and the cover test asserts at most 1080 w at 1280 px. This is the only image request that changed size on that path, so it is the likely cause, but it is not confirmed.
-- The result of the next CI run is recorded below.
+- **Run [45523715990](https://github.com/Dher10/danielherdenez-site/actions/runs/45523715990) on `1330b27`: passed.** Guard and hook tests: 817 passed. Playwright: **112 passed**, including the three that timed out before. This is consistent with the oversized cover request as the cause, but one green run does not prove it. If the no-JS tests time out again in CI, treat it as an open issue.
 
 ## Left open
 
@@ -95,3 +95,54 @@ This unit was not backlog item F (CI runner). It closes backlog C, the facts lin
 - **Backlog G:** after merge, verify `/work/pitchcraft` and its share image in production.
 - **Backlog H–O:** the low findings.
 - **A stale `next start -p 3100`** from an earlier session was serving an old build at the start of this unit. It is no longer running.
+
+## Round 2 · Codex verification fixes
+
+Codex's independent check (`docs/runs/2026-11-24-F-codex-verify.md`, FAIL) found three problems. All three are fixed.
+
+### 1. Reveal could leave content hidden (E01, regression)
+
+Two root causes, both reproduced with a failing test before the fix:
+
+- **Bottom 10% of the viewport.** Play waited for an armed block to be 10% inside the bottom edge (`rootMargin: 0px 0px -10% 0px`). A block that stopped in that band was on screen at opacity 0. This is Codex's repro (top at y≈817 of 900).
+- **Jumped past.** A fast scroll could carry an armed block from below the viewport to above it between two observer samples. The play observer never saw it intersect, so it stayed armed. A jump back up could also arm a block the reader had already passed. Both explain the blank chapters in Codex's scroll-and-return captures.
+
+The fix, in `reveal.tsx`, drops the observers. On each scroll or resize frame, the component reads the block's live position:
+
+- an armed block plays as soon as its top is above the bottom edge, including when it is already above the viewport;
+- a block that is in view, passed, or inside anything the reader has already had on screen is never armed;
+- an armed block plays after 1.2 s whatever happens (failsafe).
+
+The CSS is unchanged: no JS, print and reduced motion still never hide anything. A block now starts its fade as soon as any part enters, not at 10% in. `DESIGN.md` section "Reveal-on-scroll" still lists the old `-10%` margin from the original spec. It is outside this round's file scope, so it was left as is.
+
+### 2. Print omitted the before/after images
+
+Both comparison images were lazy, so a fresh print never loaded them. They now use `loading="eager"`. The cover was already eager, so every image on the case page loads without scrolling.
+
+### 3. "Before" alt text
+
+The crop no longer shows a game list. Daniel approved the change. The alt now reads "The old daily view on a phone: a matchup headline and the two starters' season stats." No other copy changed.
+
+### Tests added
+
+- `tests/reveal.spec.ts`:
+  - a block resting in the bottom tenth of the viewport becomes visible (failed before the fix);
+  - an armed block becomes visible on the failsafe timeout (failed before the fix);
+  - a block the reader jumped past is not hidden again on the way back (failed before the fix);
+  - fast scroll of `/about` to the bottom and back, at 390×844 and 1280×900: nothing is left armed, and every block and chapter heading is fully opaque.
+- `tests/pitchcraft.spec.ts`: print media on a fresh load, at 390 and 1280. Every article image is not lazy, is `complete` with a natural width, and has a box. The PDF generates.
+
+The fast-scroll test passed on the old code even with instant jumps larger than the viewport. The deterministic "jumped past" test is the one that catches that cause.
+
+### Verification
+
+- `npm run lint`: exit 0 · `npx tsc --noEmit`: exit 0 · `npm run build`: exit 0.
+- Guard and hook tests: 816 passed, 1 skipped.
+- Playwright against `next start` on port 3000: **119 passed**. The reveal and PitchCraft specs also passed three times in a row (`--repeat-each=3`, 72 passed).
+- Server stopped, and port 3000 confirmed free.
+
+### Test failures along the way
+
+Two of the new tests failed once after the fix. Both read opacity while the 700 ms fade was still running: the product had already shown the block. They now wait for the fade to end: up to 1 s in the "jumped past" test, which also asserts first that the block is no longer armed, and up to 2 s after the failsafe fires.
+
+`TaskStop` on `npx next start` left the `next start` child running on port 3000. It was stopped by PID before the new build was served, and again at the end.

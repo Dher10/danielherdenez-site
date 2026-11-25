@@ -8,80 +8,102 @@ interface RevealProps {
   stagger?: boolean;
 }
 
-/** Hide an element only while it sits within this distance below the viewport. */
-const ARM_MARGIN = '0px 0px 25% 0px';
-/** Play once the element is 10% inside the bottom edge, as the original spec. */
-const PLAY_MARGIN = '0px 0px -10% 0px';
+/** Arm (hide) an element only while its top sits within this many viewports below the bottom edge. */
+const ARM_BAND = 0.25;
+/** An armed element shows after this long even if it never enters the viewport. */
+const FAILSAFE_MS = 1200;
+/** Drop `.is-playing` once the longest transition (stagger: 160ms delay + 600ms) is over. */
+const PLAY_MS = 1000;
 
 /**
  * Fade-up on scroll as progressive enhancement.
  *
  * The server renders the content fully visible, and nothing hides it until
- * the reader scrolls. Only then is an element that is still below the
- * viewport "armed" (hidden by CSS, see `.reveal.is-armed`), and it plays the
- * fade-up when it enters. So without JavaScript, in print, for crawlers, in a
- * full-page capture of a fresh load, and under reduced motion, every element
- * stays visible. The hidden state is screen-only CSS, so printing mid-scroll
- * never loses content either.
+ * the reader scrolls. Only then is an element whose top is still below the
+ * viewport, and below everything the reader has already seen, "armed"
+ * (hidden by CSS, see `.reveal.is-armed`). It plays the fade-up as soon as
+ * any part of it enters the viewport. So without JavaScript, in print, for
+ * crawlers, in a full-page capture of a fresh load, and under reduced
+ * motion, every element stays visible.
+ *
+ * Content must never end up hidden, so the state is checked against the live
+ * layout on every scroll frame instead of relying on observer callbacks:
+ * - an armed element plays as soon as its top is above the bottom edge,
+ *   including when a fast scroll carried it past the viewport in one frame;
+ * - an element the reader has already scrolled past (at any speed, in either
+ *   direction) is never armed;
+ * - an armed element plays after FAILSAFE_MS whatever happens.
  */
 export default function Reveal({ children, className, stagger = false }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const node = ref.current;
-    if (!node || typeof IntersectionObserver === 'undefined') return;
+    if (!node) return;
     // Non-null binding so the nested handlers keep the narrowed type.
     const el: HTMLDivElement = node;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    let armed = false;
-    let timer: number | undefined;
-    let armer: IntersectionObserver | undefined;
+    let state: 'idle' | 'armed' | 'done' = 'idle';
+    let frame = 0;
+    let failsafe: number | undefined;
+    let playTimer: number | undefined;
+    // Lowest document position the reader has had on screen so far.
+    let seenBottom = window.scrollY + window.innerHeight;
 
-    const player = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        stop();
-        if (!armed) return;
-        el.classList.add('is-playing');
-        el.classList.remove('is-armed');
-        timer = window.setTimeout(() => el.classList.remove('is-playing'), 1000);
-      },
-      { rootMargin: PLAY_MARGIN },
-    );
+    function finish() {
+      state = 'done';
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(failsafe);
+    }
 
-    function stop() {
-      player.disconnect();
-      armer?.disconnect();
-      window.removeEventListener('scroll', startArming);
+    function play() {
+      const wasArmed = state === 'armed';
+      finish();
+      if (!wasArmed) return;
+      el.classList.add('is-playing');
+      el.classList.remove('is-armed');
+      playTimer = window.setTimeout(() => el.classList.remove('is-playing'), PLAY_MS);
+    }
+
+    function check() {
+      frame = 0;
+      const viewport = window.innerHeight;
+      const top = el.getBoundingClientRect().top;
+      const docTop = top + window.scrollY;
+      const seenBefore = seenBottom;
+      seenBottom = Math.max(seenBottom, window.scrollY + viewport);
+
+      if (state === 'armed') {
+        // In view, or already carried past it: show it.
+        if (top < viewport) play();
+        return;
+      }
+      // Reached, in view or passed, or inside what the reader has seen: never hide it.
+      if (top < viewport || docTop < seenBefore) {
+        finish();
+        return;
+      }
+      if (top < viewport * (1 + ARM_BAND)) {
+        state = 'armed';
+        el.classList.add('is-armed');
+        failsafe = window.setTimeout(play, FAILSAFE_MS);
+      }
+    }
+
+    function onScroll() {
+      if (!frame) frame = window.requestAnimationFrame(check);
     }
 
     // Arm only after the reader scrolls: a fresh load never hides anything.
-    function startArming() {
-      window.removeEventListener('scroll', startArming);
-      armer = new IntersectionObserver(
-        ([entry]) => {
-          if (armed || !entry.isIntersecting) return;
-          if (entry.boundingClientRect.top < window.innerHeight) {
-            // Already on screen (jump, fast scroll, tall viewport): leave it be.
-            stop();
-            return;
-          }
-          armed = true;
-          el.classList.add('is-armed');
-          armer?.disconnect();
-          player.observe(el);
-        },
-        { rootMargin: ARM_MARGIN },
-      );
-      armer.observe(el);
-    }
-
-    window.addEventListener('scroll', startArming, { passive: true, once: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll, { passive: true });
 
     return () => {
-      stop();
-      window.clearTimeout(timer);
+      finish();
+      window.clearTimeout(playTimer);
       el.classList.remove('is-armed', 'is-playing');
     };
   }, []);

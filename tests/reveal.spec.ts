@@ -127,6 +127,127 @@ test.describe('Reveal: motion stays as enhancement', () => {
     }).toBe(true);
   });
 
+  test('a block resting in the bottom tenth of the viewport is not left hidden', async ({ page }) => {
+    // Codex's repro: an armed About chapter stopped with its top at ~y 817 of 900
+    // stayed at opacity 0, because play waited for it to be 10% inside.
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/about');
+    await page.locator('.theme-toggle').click();
+    await page.mouse.move(640, 400);
+    const target = page.locator('.reveal').nth(2);
+    // Step until the block arms, then stop it just inside the bottom edge.
+    for (let i = 0; i < 40; i++) {
+      if (await target.evaluate((el) => el.classList.contains('is-armed'))) break;
+      await page.mouse.wheel(0, 40);
+      await page.waitForTimeout(60);
+    }
+    await target.evaluate((el) => {
+      const top = el.getBoundingClientRect().top + window.scrollY;
+      window.scrollTo({ top: top - window.innerHeight * 0.92, behavior: 'instant' });
+    });
+    await expect.poll(() => effectiveOpacity(target), { timeout: 2000 }).toBe(1);
+  });
+
+  test('an armed block becomes visible on a timeout even if it never enters', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/');
+    await page.locator('.theme-toggle').click();
+    await scrollUntilArmed(page);
+    await expect(page.locator('.reveal.is-armed')).toHaveCount(0, { timeout: 3000 });
+    // Allow the fade that the failsafe starts to finish.
+    await expect(async () => expectAllRevealsVisible(page, 'after failsafe /')).toPass({ timeout: 2000 });
+  });
+
+  test('a block the reader jumped past is not hidden again on the way back', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto('/about');
+    await page.locator('.theme-toggle').click();
+    await page.mouse.move(640, 400);
+    await page.mouse.wheel(0, 40); // the first scroll enables arming
+    await page.waitForTimeout(100);
+    const target = page.locator('.reveal').nth(2);
+    const place = (fromTop: number) =>
+      target.evaluate((el, f) => {
+        const top = el.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({ top: top - f * window.innerHeight, behavior: 'instant' });
+      }, fromTop);
+    const frames = () => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    await place(1.1); // just below the viewport: armed
+    await frames();
+    expect(await target.evaluate((el) => el.classList.contains('is-armed')), 'armed first').toBe(true);
+    // One jump that carries the whole block above the viewport.
+    await target.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      window.scrollTo({ top: r.bottom + window.scrollY + 50, behavior: 'instant' });
+    });
+    await frames();
+    await place(1.1); // back below the viewport after the reader went past it
+    await frames();
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: 'instant' }));
+    await frames();
+    expect(await target.evaluate((el) => el.classList.contains('is-armed')), 'still armed').toBe(false);
+    // It may still be finishing its 700ms fade, well inside the failsafe.
+    await expect.poll(() => effectiveOpacity(target), { timeout: 1000 }).toBe(1);
+  });
+
+  for (const viewport of [
+    { name: 'mobile', width: 390, height: 844 },
+    { name: 'desktop', width: 1280, height: 900 },
+  ]) {
+    test(`fast scroll to the bottom of /about and back leaves every chapter visible (${viewport.name})`, async ({ page }) => {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await page.goto('/about');
+      await page.locator('.theme-toggle').click();
+      await page.mouse.move(viewport.width / 2, viewport.height / 2);
+      // Fast wheel steps, then instant jumps larger than the viewport (which
+      // can carry a block past the viewport between two frames), down to the
+      // bottom and back to the top.
+      for (let i = 0; i < 6; i++) await page.mouse.wheel(0, 300);
+      await page.evaluate(async () => {
+        const frame = () => new Promise((r) => requestAnimationFrame(() => r(null)));
+        const step = Math.round(window.innerHeight * 1.3);
+        while (window.scrollY + window.innerHeight < document.documentElement.scrollHeight - 2) {
+          window.scrollBy({ top: step, behavior: 'instant' });
+          await frame();
+        }
+        while (window.scrollY > 0) {
+          window.scrollBy({ top: -step, behavior: 'instant' });
+          await frame();
+        }
+      });
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+      // Nothing the reader has already passed may be hidden.
+      expect(
+        await page.locator('.reveal.is-armed').count(),
+        'blocks re-hidden after the reader passed them',
+      ).toBe(0);
+      // Every chapter heading the page has, read from where the reader stands
+      // and once more after scrolling each one into view.
+      const chapters = page.locator('.reveal h2, .reveal h3');
+      expect(await chapters.count()).toBeGreaterThan(0);
+      await expect.poll(async () => {
+        const values = await page.locator('.reveal').evaluateAll((els) =>
+          els.map((el) => {
+            let value = 1;
+            for (let node: Element | null = el; node; node = node.parentElement) {
+              value *= Number(getComputedStyle(node).opacity);
+            }
+            for (const child of Array.from(el.children)) value = Math.min(value, Number(getComputedStyle(child).opacity));
+            return value;
+          }),
+        );
+        return values.every((v) => v === 1);
+      }, { timeout: 3000 }).toBe(true);
+      for (const chapter of await chapters.all()) {
+        await chapter.scrollIntoViewIfNeeded();
+        await expect.poll(() => effectiveOpacity(chapter), { timeout: 2000 }).toBe(1);
+      }
+    });
+  }
+
   test('reduced motion never arms a block', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');

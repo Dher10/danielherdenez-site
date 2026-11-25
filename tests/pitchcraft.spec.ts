@@ -68,6 +68,34 @@ test.describe('PitchCraft case study', () => {
     expect(Math.abs(c!.height - d!.height)).toBeLessThanOrEqual(1);
   });
 
+  for (const viewport of [
+    { name: 'mobile', width: 390, height: 844 },
+    { name: 'desktop', width: 1280, height: 900 },
+  ]) {
+    test(`print from a fresh load has every case image loaded (${viewport.name})`, async ({ page }) => {
+      // Lazy images below the fold never load in print, which left the
+      // before/after pair blank. No scrolling here: a fresh load, then print.
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.emulateMedia({ media: 'print' });
+      await page.goto(ROUTE);
+      const imgs = page.locator('article img');
+      expect(await imgs.count()).toBeGreaterThanOrEqual(3);
+      await expect(page.locator('.before-after img')).toHaveCount(2);
+      for (const img of await imgs.all()) {
+        await expect(img).not.toHaveAttribute('loading', 'lazy');
+        await expect
+          .poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0))
+          .toBe(true);
+        const box = await img.boundingBox();
+        expect(box?.width ?? 0).toBeGreaterThan(0);
+        expect(box?.height ?? 0).toBeGreaterThan(0);
+      }
+      // The PDF itself renders: Chromium prints what has decoded.
+      const pdf = await page.pdf();
+      expect(pdf.byteLength).toBeGreaterThan(0);
+    });
+  }
+
   test('every case puts the back link above the eyebrow', async ({ page }) => {
     for (const route of ['/work/veflo-trace', '/work/internal-platform', ROUTE]) {
       await page.goto(route);
