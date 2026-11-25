@@ -35,14 +35,16 @@ When recreating in Next.js, match values exactly. Where the prototype uses CSS v
 
 ## Known Deviations
 
-The shipped site has moved away from this spec in four places. They are recorded here rather than rewritten in place, so the sections below still read as what was originally approved.
+The shipped site has moved away from this spec in the places below. They are recorded here rather than rewritten in place, so the sections below still read as what was originally approved.
 
 | # | This spec says | Shipped today | Origin |
 |---|---|---|---|
 | 1 | Stack is Next.js 15 | Next.js 16.2.6 | Pre-existing |
 | 2 | Monogram links to `#top` | Links to `/`. The `#top` anchor was removed when the pages gained a `<main>` landmark | Pre-existing |
-| 3 | Work grid card 3 is `col-start-3 col-span-8` | `grid-column: 4 / span 6` | Pre-existing |
+| 3 | Work grid card 3 is `col-start-3 col-span-8` | **Resolved 2026-11-24:** back to the spec, `grid-column: 3 / span 8` (it had shipped as `4 / span 6`, which left the lone card floating; audit E12) | Pre-existing, resolved in Unit F |
 | 4 | Reduced motion clamps every animation and transition to `0.001ms` through a global rule in `globals.css` | A scoped block disables the hero mesh drift, smooth scrolling and the hover lifts, and leaves colour transitions alone. Framer Motion is covered by `MotionConfig reducedMotion="user"` in the root layout instead of per-component `useReducedMotion()` | Changed 2026-09-05 |
+| 5 | Scrolled nav: `blur(14px)` and an 80% mix of `--bg-0` | `blur(20px)` and a **95%** mix of `--bg-0`, same hairline. At 80% the shapes and colors of screenshots and text scrolling underneath showed through as a band (audit E07) | Changed 2026-11-24 (Unit F) |
+| 6 | Reveal-on-scroll: Framer `whileInView` from `{opacity: 0, y: 16}` | Content is **visible by default**. `Reveal` is a plain `div` plus an IntersectionObserver: nothing is hidden until the reader scrolls, then a block still below the viewport is armed (`.is-armed`) and fades up 16px over 700ms when it enters (`.is-playing`). The hidden state is CSS inside `@media screen and (prefers-reduced-motion: no-preference)`, so no-JS, print, crawlers, full-page captures and reduced motion never hide content. The home card stagger (`<Reveal stagger>`) uses the same mechanism with 80ms steps. Framer's SSR `opacity: 0` hid content without JavaScript (audit E01) | Changed 2026-11-24 (Unit F) |
 
 Deviation 4 needs context: the `0.001ms` rule was never actually implemented. The accessibility pass on 2026-09-05 found no `prefers-reduced-motion` CSS at all and added the scoped version, which keeps hover and focus feedback readable instead of freezing colour changes along with movement.
 
@@ -254,11 +256,25 @@ There is **no other logo lockup or icon**. Do not generate one.
 
 Added 2026-11-20 with `/work/pitchcraft`. Tokens only, no new colors. Styles live in the "Case study pieces" block of `globals.css`.
 
-- **Facts strip** (`FactsStrip`): `<dl>` between hairline top and bottom borders, 1 column on mobile, 2 from `768px`. Label: Geist Mono 12px, `--fg-2`, 0.08em, uppercase. Value: Geist Sans 15px, `--fg-0`; links in `--accent-fg`. Facts only, one line each.
+Revised 2026-11-24 (Unit F, from the Unit E audit).
+
+- **Facts line** (`.case-facts`): one line directly under the lead, Geist Mono 13px, `--fg-2`, wrapping naturally on a phone; its links follow the inline-link rule (section 8) and never break inside a link. PitchCraft's line is the approved "Written at v2.2.0 · November 2026 · Open PitchCraft ↗ · GitHub ↗", both links in a new tab. It replaced the facts strip (`FactsStrip`, removed).
+- **Back to Work** (`.ghost-link.back-link`): "← Work" sits above the eyebrow on every case, on the prose edge, with a 44px-high hit area. No separate CTA row after the title.
+- **Cover** (art direction): on PitchCraft, below `768px` the cover is a crop of the phone capture at full prose width (`pitchcraft-game5-cover-phone.webp`, 750×1612); from `768px` the desktop capture. A `<picture>` built with `getImageProps`, so only the selected source downloads; each `<source>` carries its own width/height. The cover wrapper is `.prose-wide` (52rem) and has no top margin.
 - **Framed figure** (`CaseFigure`): `figure` with a mono caption (12px, `--fg-2`, max `64ch`). Default body is a card: `--bg-2`, 1px `--hairline`, `--radius-lg`, padding `--space-6` (`--space-8` from `768px`). `bare` drops the frame for screenshots, which get a hairline and `--radius-md`. Light mode border uses the same sage `#DDE7E2` as the cards.
-- **Before/after pair** (`.before-after`): two phone screenshots in a 2-column grid with mono uppercase labels "Before" / "After". Inside a `bare` figure; max `40rem` from `768px`.
-- **Pipeline figure** (`PitchcraftPipeline`): ordered list of steps, 1 column on mobile, 5 from `900px`. Step: `--bg-1` (light: `--bg-0`), 1px `--hairline`, `--radius-md`. Steps 3 and 4 ("Write and check", "Validate") use an `--accent-fg` border to mark where claims are checked.
-- **Unit-chart figures** (`PitchcraftEval`): two panels (3fr / 2fr from `768px`) of unit squares. Sentence units 18px, report units 36×48px, `--fg-3` at 45% opacity. The marked unit (error / unsupported) is solid `--accent-fg`. The big number is Instrument Serif 28px; the legend is mono 12px.
+- **Before/after pair** (`.before-after`): two phone captures cut to the **same height and scale** (946 CSS px at 375px wide: `pitchcraft-game5-before-crop.webp` 375×946 at 1×, and the 750×1892 after capture at 2×), so they end on one line. Side by side from `768px` (max `40rem`), stacked full width below. Mono uppercase labels "Before" / "After". Originals stay in `public/work/pitchcraft/`.
+- **Pipeline figure** (`PitchcraftPipeline`): ordered list of steps sized by its figure, not the viewport (container query): a stacked card per step when the frame is under `30rem`, one row per step from `30rem` (index `2rem`, name `8.5rem`, text). Step: `--bg-1` (light: `--bg-0`), 1px `--hairline`, `--radius-md`. Steps 3 and 4 ("Write and check", "Validate") use an `--accent-fg` border to mark where claims are checked.
+- **Unit-chart figures** (`PitchcraftEval`): two panels (3fr / 2fr from `768px`). The two states differ in **shape as well as color**: an unmarked unit is an outlined square (transparent, 2px `--fg-2` outline, well over 3:1 on `--bg-2`); a marked unit (error / unsupported) is a filled `--accent-fg` circle (a filled pill for the 36×48 report units). Sentence units 18px. The legend repeats both shapes at 10px. The ARIA labels carry the totals. The big number is Instrument Serif 28px; the legend is mono 12px.
+
+### 8. Inner pages (About, Work, cases)
+
+Added 2026-11-24 (Unit F).
+
+- **Top spacing** (`.page-hero`): one shared top padding so the first line sits close under the bar and every inner page starts at the same height: `--space-12` (48px, same as the mobile home hero) below `768px`, `--space-20` from `768px`, `--space-24` from `1024px`. Bottom padding unchanged.
+- **/work**: the card section has no top padding after the hero (`.page-hero + .work`), so the hero's bottom padding is the only gap before the first card.
+- **Prose measure**: narrative prose uses the site measure `.prose-narrow` (42rem at 20px: longest measured lines 76–79 characters, down from 87–96 at 52rem) on About and all cases, including the chapter column. Wide screenshots opt into `.prose-wide` (52rem).
+- **Chapter labels** (`.stage-label`): desktop keeps the right rail, but labels start at one shared left edge `--space-12` past the prose column instead of hugging the far right. A chapter that opens on a pull quote centres its label on the quote's first line. Below `768px` the label sits on the prose's left edge, directly above its block (`--space-3`).
+- **Inline links in prose** (`.about-prose`, `.about-body`, `.case-facts`, `.case-sources`, unclassed `<a>`): `--accent-fg`, persistent 1px underline at `0.22em` offset, `--accent-hover` on hover. Buttons and ghost links keep their own treatment.
 
 ---
 
