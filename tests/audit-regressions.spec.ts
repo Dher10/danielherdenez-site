@@ -135,3 +135,50 @@ test('case-to-case navigation from More work resets scroll to the top', async ({
   await expect(page).toHaveURL(/\/work\/internal-platform$/);
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
+
+const INNER = ['/about', '/work', '/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft'];
+
+for (const [width, height, maxGap] of [[390, 844, 56], [1280, 900, 104]] as const) {
+  test(`inner pages share one compact top spacing at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height });
+    const tops: number[] = [];
+    for (const route of INNER) {
+      await page.goto(route);
+      const navBottom = await page.locator('.nav').evaluate((el) => el.getBoundingClientRect().bottom);
+      // The hero's prose block: the back link (cases) or the eyebrow starts it.
+      const first = await page
+        .locator('.page-hero .prose-narrow')
+        .evaluate((el) => el.getBoundingClientRect().top);
+      expect(first - navBottom, route).toBeLessThanOrEqual(maxGap);
+      tops.push(Math.round(first));
+    }
+    expect(new Set(tops).size, `first-element tops ${tops.join(', ')}`).toBe(1);
+  });
+}
+
+test('/work has no second gap between the heading and the first card', async ({ page }) => {
+  await page.goto('/work');
+  const pad = await page.locator('section.work').evaluate((el) => getComputedStyle(el).paddingTop);
+  expect(pad).toBe('0px');
+});
+
+for (const theme of ['dark', 'light'] as const) {
+  test(`scrolled nav surface is near-opaque (${theme})`, async ({ page }) => {
+    await page.addInitScript((t) => localStorage.setItem('dh-theme', t), theme);
+    await page.goto('/work/pitchcraft');
+    await page.evaluate(() => window.scrollTo({ top: 800, behavior: 'instant' }));
+    const nav = page.locator('.nav');
+    await expect(nav).toHaveClass(/scrolled/);
+    // Poll: the background transitions in over 200ms.
+    await expect
+      .poll(() =>
+        nav.evaluate((el) => {
+          const bg = getComputedStyle(el).backgroundColor;
+          const parts = bg.match(/[\d.]+/g)!.map(Number);
+          // rgb() → opaque; rgba()/color(... / a) → last number is alpha.
+          return /rgba|\//.test(bg) ? parts[parts.length - 1] : 1;
+        }),
+      )
+      .toBeGreaterThanOrEqual(0.94);
+  });
+}

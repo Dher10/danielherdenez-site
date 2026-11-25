@@ -23,13 +23,11 @@ export default function InternalPlatformPage() {
         <section className="page-hero">
           <div className="container page-hero-inner">
             <div className="prose-narrow">
+              <Link href="/work" className="ghost-link back-link">
+                &larr; Work
+              </Link>
               <Eyebrow>Internal platform &middot; Since 2026</Eyebrow>
               <h1>Designing product work beside an agentic build system</h1>
-              <div className="cta-row">
-                <Link href="/work" className="ghost-link">
-                  &larr; Work
-                </Link>
-              </div>
             </div>
           </div>
         </section>

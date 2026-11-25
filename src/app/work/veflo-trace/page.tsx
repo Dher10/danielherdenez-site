@@ -23,13 +23,11 @@ export default function VefloTracePage() {
         <section className="page-hero">
           <div className="container page-hero-inner">
             <div className="prose-narrow">
+              <Link href="/work" className="ghost-link back-link">
+                &larr; Work
+              </Link>
               <Eyebrow>Veflo Trace &middot; Since 2025</Eyebrow>
               <h1>Building the path from workflow software to AI-assisted operations</h1>
-              <div className="cta-row">
-                <Link href="/work" className="ghost-link">
-                  &larr; Work
-                </Link>
-              </div>
             </div>
           </div>
         </section>

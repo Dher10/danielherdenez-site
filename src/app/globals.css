@@ -179,9 +179,11 @@ html, body {
                 backdrop-filter var(--dur-base) var(--ease-out);
   }
   .nav.scrolled {
-    background: color-mix(in oklab, var(--bg-0) 80%, transparent);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
+    /* 95%, not 80%: at 80% the shapes and colors of a screenshot or a
+       paragraph scrolling underneath showed through as a band (audit E07). */
+    background: color-mix(in oklab, var(--bg-0) 95%, transparent);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-bottom-color: var(--hairline);
   }
   .nav-inner {
@@ -451,8 +453,10 @@ html, body {
     }
     .work-grid .case:nth-child(1) { grid-column: 1 / span 6; }
     .work-grid .case:nth-child(2) { grid-column: 7 / span 6; }
+    /* Original spec (DESIGN.md): the lone third card spans 8 columns from
+       column 3, so it carries weight instead of floating (audit E12). */
     .work-grid .case:nth-child(3) {
-      grid-column: 4 / span 6;
+      grid-column: 3 / span 8;
     }
   }
 
@@ -862,7 +866,19 @@ html, body {
 }
 
 /* ============ /about page ============ */
-.page-hero { position: relative; padding: clamp(88px, 14vh, 152px) 0 clamp(40px, 6vh, 64px); overflow: hidden; }
+/* Inner-page entrance (About, Work, the three cases). One shared top
+   padding so the first line sits close under the bar at every width and
+   the pages stay aligned with each other (audit E05). 48px on mobile
+   matches the home hero. */
+.page-hero { position: relative; padding: var(--space-12) 0 clamp(40px, 6vh, 64px); overflow: hidden; }
+@media (min-width: 768px) { .page-hero { padding-top: var(--space-20); } }
+@media (min-width: 1024px) { .page-hero { padding-top: var(--space-24); } }
+/* /work: the hero's bottom padding is the only gap before the first card. */
+.page-hero + .work { padding-top: 0; }
+
+/* Back to Work: one compact link above the eyebrow on every case, on the
+   prose edge, with a 44px hit area (audit E11). */
+.back-link { display: flex; width: fit-content; min-height: 44px; margin-bottom: var(--space-2); }
 .page-hero-inner { position: relative; z-index: 1; }
 .page-hero h1 {
   font-family: var(--font-serif); font-weight: 400;
@@ -872,11 +888,27 @@ html, body {
 
 .narrative { padding: clamp(32px, 5vh, 56px) 0 var(--space-24); }
 @media (min-width: 1024px) { .narrative { padding-bottom: var(--space-32); } }
-.about-narrative .prose-narrow { max-width: 52rem; }
+/* Narrative prose uses the site measure (.prose-narrow, 42rem): longest
+   lines 76-79 characters at 20px. It used to widen to 52rem, which ran to
+   87-96 characters on desktop (audit E14). Wide screenshots opt into
+   .prose-wide and keep the 52rem span. */
+.prose-wide { max-width: 52rem; }
 
 .about-prose p { font-family: var(--font-sans); font-size: var(--fs-20); line-height: 1.62; color: var(--fg-1); margin: 0; text-wrap: pretty; }
 .about-prose p + p { margin-top: var(--space-8); }
 .about-prose strong { color: var(--fg-0); font-weight: 500; }
+
+/* Inline links inside running prose: sage plus a persistent underline, so
+   they never read as plain text (audit E08). Classed links (buttons, ghost
+   links) keep their own treatment. */
+:where(.about-prose, .about-body, .case-facts, .case-sources) a:not([class]) {
+  color: var(--accent-fg);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.22em;
+  transition: color var(--dur-fast) var(--ease-out);
+}
+:where(.about-prose, .about-body, .case-facts, .case-sources) a:not([class]):hover { color: var(--accent-hover); }
 
 .pull { margin: clamp(56px, 9vh, 104px) 0; padding-left: var(--space-6); border-left: 2px solid var(--accent-fg); }
 .pull p {
@@ -891,15 +923,17 @@ html, body {
 }
 .stage {
   display: grid;
-  grid-template-columns: minmax(0, 52rem) 1fr;
+  grid-template-columns: minmax(0, 42rem) 1fr;
   column-gap: var(--space-12);
   align-items: start;
 }
+/* Chapter labels: right rail on desktop, starting at one shared edge just
+   past the prose column instead of hugging the far right (audit E09). */
 .stage-label {
   grid-column: 2;
   grid-row: 1;
-  justify-self: end;
-  text-align: right;
+  justify-self: start;
+  text-align: left;
   align-self: start;
   font-family: var(--font-mono);
   font-size: var(--fs-12);
@@ -922,9 +956,16 @@ html, body {
   grid-column: 1;
   grid-row: 1;
 }
+/* A chapter that opens on a pull quote: centre the label on the quote's
+   first line, as 7px does for a 20px paragraph line. */
+.stage:has(> .about-prose > .pull:first-child) .stage-label {
+  padding-top: calc((clamp(1.75rem, 2.4vw + 1rem, 3rem) * 1.16 - 1.125rem) / 2);
+}
 @media (max-width: 767px) {
+  /* Mobile: the label sits on the prose's own left edge, right above it. */
   .stage { grid-template-columns: 1fr; }
-  .stage-label { grid-column: 1; grid-row: 1; padding-top: 0; margin-bottom: var(--space-3); }
+  .stage-label,
+  .stage:has(> .about-prose > .pull:first-child) .stage-label { grid-column: 1; grid-row: 1; padding-top: 0; margin-bottom: var(--space-3); }
   .stage .about-prose { grid-column: 1; grid-row: 2; }
 }
 
@@ -953,21 +994,18 @@ html, body {
 
 /* ============================================================
    Case study pieces (added 2026-11-20 with /work/pitchcraft)
-   Facts strip, framed figures, before/after pair, pipeline and
+   Facts line, framed figures, before/after pair, pipeline and
    eval unit charts. Tokens only; no new colors.
    ============================================================ */
 .case-lead { margin-top: var(--space-6); max-width: 46ch; font-size: var(--fs-18); line-height: var(--lh-relaxed); color: var(--fg-1); text-wrap: pretty; }
 
-.facts-strip {
-  display: grid; grid-template-columns: 1fr; gap: var(--space-5);
-  margin: var(--space-10) 0 0; padding: var(--space-6) 0;
-  border-top: 1px solid var(--hairline); border-bottom: 1px solid var(--hairline);
-}
-@media (min-width: 768px) { .facts-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-6) var(--space-8); } }
-.facts-strip .fact { margin: 0; }
-.facts-strip dt { font-family: var(--font-mono); font-size: var(--fs-12); color: var(--fg-2); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: var(--space-2); }
-.facts-strip dd { margin: 0; font-size: var(--fs-15); line-height: 1.5; color: var(--fg-0); text-wrap: pretty; }
-.facts-strip dd a { color: var(--accent-fg); }
+/* One snapshot line under the lead: version, date, links. Replaced the
+   facts strip on 2026-11-24 (audit E04). Wraps naturally on a phone. */
+.case-facts { margin: var(--space-5) 0 0; font-family: var(--font-mono); font-size: var(--fs-13); line-height: 1.7; letter-spacing: var(--tracking-mono); color: var(--fg-2); }
+.case-facts a { white-space: nowrap; }
+/* The cover opens the article: no extra figure margin on top of the
+   hero and narrative padding. */
+.prose-wide > .case-figure:first-child { margin-top: 0; }
 
 .case-figure { margin: var(--space-12) 0; }
 .case-figure-frame { background: var(--bg-2); border: 1px solid var(--hairline); border-radius: var(--radius-lg); padding: var(--space-6); }
@@ -976,13 +1014,21 @@ html, body {
 .case-figure figcaption { margin-top: var(--space-3); font-family: var(--font-mono); font-size: var(--fs-12); line-height: 1.6; color: var(--fg-2); letter-spacing: 0.02em; max-width: 64ch; }
 .case-figure img { display: block; width: 100%; height: auto; border-radius: var(--radius-md); border: 1px solid var(--hairline); }
 
-.before-after { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); align-items: start; }
-@media (min-width: 768px) { .before-after { gap: var(--space-8); max-width: 40rem; } }
+/* Both images are crops of the same height and scale (946 CSS px at 375
+   wide), so the pair ends on one line. Stacked on mobile (audit E06). */
+.before-after { display: grid; grid-template-columns: 1fr; gap: var(--space-8); align-items: start; }
+@media (min-width: 768px) { .before-after { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 40rem; } }
 .case-figure .before-after p { margin: 0 0 var(--space-3); font-family: var(--font-mono); font-size: var(--fs-12); color: var(--fg-2); letter-spacing: 0.08em; text-transform: uppercase; }
 
-.pipeline-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-4); counter-reset: none; }
-@media (min-width: 900px) { .pipeline-steps { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-3); } }
+/* Sized by the figure, not the viewport (audit E13): a stacked card per
+   step when narrow, one row per step (index, name, text) once the frame
+   is wide enough. Five columns no longer fit the 42rem prose column. */
+.pipeline { container-type: inline-size; }
+.pipeline-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); counter-reset: none; }
 .pipeline-step { position: relative; display: flex; flex-direction: column; gap: var(--space-2); padding: var(--space-4); background: var(--bg-1); border: 1px solid var(--hairline); border-radius: var(--radius-md); }
+@container (min-width: 30rem) {
+  .pipeline-step { display: grid; grid-template-columns: 2rem 8.5rem minmax(0, 1fr); column-gap: var(--space-3); align-items: baseline; }
+}
 [data-theme="light"] .pipeline-step { background: var(--bg-0); }
 .pipeline-step:nth-child(3), .pipeline-step:nth-child(4) { border-color: var(--accent-fg); }
 .pipeline-index { font-family: var(--font-mono); font-size: var(--fs-12); color: var(--accent-fg); letter-spacing: 0.08em; }
@@ -996,14 +1042,19 @@ html, body {
 .units { display: grid; gap: 6px; }
 .units-sentence { grid-template-columns: repeat(10, 18px); }
 .units-report { grid-template-columns: repeat(5, 36px); }
-.unit { display: inline-block; width: 18px; height: 18px; border-radius: 3px; background: var(--fg-3); opacity: 0.45; }
+/* Two states that differ in shape, not only color (audit E10): an outlined
+   square for the unmarked unit, a filled circle (a filled pill for reports)
+   for the marked one. The --fg-2 outline is well above 3:1 on --bg-2. */
+.unit { display: inline-block; box-sizing: border-box; width: 18px; height: 18px; border-radius: 3px; background: transparent; border: 2px solid var(--fg-2); }
 .units-report .unit, .unit.unit-report { width: 36px; height: 48px; border-radius: 4px; }
-.unit-marked { background: var(--accent-fg); opacity: 1; }
+.unit-marked { background: var(--accent-fg); border-color: var(--accent-fg); border-radius: 999px; }
+.units-report .unit-marked { border-radius: 999px; }
 .case-figure .eval-result { margin: var(--space-4) 0 0; font-size: var(--fs-15); line-height: 1.5; color: var(--fg-1); }
 .eval-result strong { font-family: var(--font-serif); font-weight: 400; font-size: 1.75rem; color: var(--fg-0); margin-right: 6px; }
 .case-figure .eval-legend { margin: var(--space-3) 0 0; display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; font-family: var(--font-mono); font-size: var(--fs-12); color: var(--fg-2); }
 .eval-legend .legend-item { display: inline-flex; align-items: center; gap: 6px; }
-.eval-legend .unit { width: 10px; height: 10px; border-radius: 2px; }
+.eval-legend .unit { width: 10px; height: 10px; border-radius: 2px; border-width: 1.5px; }
+.eval-legend .unit-marked { border-radius: 999px; }
 
 .case-sources-intro { margin: 0 0 var(--space-4); font-size: var(--fs-15); line-height: 1.6; color: var(--fg-1); max-width: 60ch; }
 .case-sources { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--space-2); }

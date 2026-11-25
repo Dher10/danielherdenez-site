@@ -35,6 +35,20 @@ async function expectAllRevealsVisible(page: Page, route: string) {
   }
 }
 
+/**
+ * Scroll in small wheel steps until a block arms. A block arms only while it
+ * sits in the band just below the viewport, so one step may arm nothing.
+ */
+async function scrollUntilArmed(page: Page) {
+  await page.mouse.move(640, 400);
+  const armed = page.locator('.reveal.is-armed');
+  for (let i = 0; i < 20 && (await armed.count()) === 0; i++) {
+    await page.mouse.wheel(0, 120);
+    await page.waitForTimeout(150);
+  }
+  await expect(armed.first()).toBeAttached();
+}
+
 const ROUTES = ['/', '/about', '/work', '/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft'];
 
 test.describe('Reveal: content is visible by default', () => {
@@ -71,8 +85,7 @@ test.describe('Reveal: content is visible by default', () => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto('/work/pitchcraft');
     await page.locator('.theme-toggle').click(); // hydration
-    await page.mouse.wheel(0, 200);
-    await expect.poll(() => page.locator('.reveal.is-armed').count()).toBeGreaterThan(0);
+    await scrollUntilArmed(page);
     await page.emulateMedia({ media: 'print' });
     await expectAllRevealsVisible(page, 'print after scroll');
   });
@@ -92,15 +105,7 @@ test.describe('Reveal: motion stays as enhancement', () => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     await page.goto('/');
     await page.locator('.theme-toggle').click();
-    // Scroll in small steps: a block arms only while it sits in the band
-    // just below the viewport, so one short wheel step may arm nothing yet.
-    await page.mouse.move(640, 400);
-    const armedCount = page.locator('.reveal.is-armed');
-    for (let i = 0; i < 12 && (await armedCount.count()) === 0; i++) {
-      await page.mouse.wheel(0, 120);
-      await page.waitForTimeout(150);
-    }
-    await expect(armedCount.first()).toBeAttached();
+    await scrollUntilArmed(page);
     // Pin the block by position: `.is-armed` would re-resolve to the next one.
     const index = await page.locator('.reveal').evaluateAll((els) =>
       els.findIndex((el) => el.classList.contains('is-armed')),

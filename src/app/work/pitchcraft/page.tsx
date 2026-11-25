@@ -1,12 +1,11 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
+import Image, { getImageProps } from 'next/image';
 import Link from 'next/link';
 import Nav from '@/components/sections/nav';
 import Footer from '@/components/sections/footer';
 import CaseCard from '@/components/shared/case-card';
 import CaseFigure from '@/components/shared/case-figure';
 import Eyebrow from '@/components/shared/eyebrow';
-import FactsStrip from '@/components/shared/facts-strip';
 import Reveal from '@/components/shared/reveal';
 import PitchcraftEval from '@/components/figures/pitchcraft-eval';
 import PitchcraftPipeline from '@/components/figures/pitchcraft-pipeline';
@@ -68,6 +67,42 @@ const sources = [
   { label: 'Release notes', href: `${TREE}/docs/releases` },
 ];
 
+const COVER_ALT =
+  "The PitchCraft page for World Series Game 5: Milwaukee Brewers 4, Tampa Bay Rays 1, with the reasons the game is notable and both starters' final lines.";
+
+/**
+ * Art-directed cover: below 768px a crop of the phone capture at full prose
+ * width, the desktop capture above. Only the selected source is downloaded.
+ */
+function Cover() {
+  const {
+    props: { srcSet: desktop },
+  } = getImageProps({
+    alt: COVER_ALT,
+    src: '/work/pitchcraft/pitchcraft-game5-desktop.webp',
+    width: 1441,
+    height: 900,
+    sizes: '(min-width: 1024px) 832px, calc(100vw - 96px)',
+  });
+  const {
+    props: { srcSet: phone, ...rest },
+  } = getImageProps({
+    alt: COVER_ALT,
+    src: '/work/pitchcraft/pitchcraft-game5-cover-phone.webp',
+    width: 750,
+    height: 1612,
+    sizes: 'calc(100vw - 64px)',
+  });
+  return (
+    <picture>
+      <source media="(min-width: 768px)" srcSet={desktop} width={1441} height={900} />
+      <source media="(max-width: 767px)" srcSet={phone} width={750} height={1612} />
+      {/* eslint-disable-next-line jsx-a11y/alt-text -- alt comes from getImageProps in rest */}
+      <img {...rest} loading="eager" fetchPriority="high" />
+    </picture>
+  );
+}
+
 export default function PitchcraftPage() {
   return (
     <>
@@ -80,6 +115,9 @@ export default function PitchcraftPage() {
         <section className="page-hero">
           <div className="container page-hero-inner">
             <div className="prose-narrow">
+              <Link href="/work" className="ghost-link back-link">
+                &larr; Work
+              </Link>
               <Eyebrow>PitchCraft &middot; Since June 2026</Eyebrow>
               <h1>{title}</h1>
               <p className="case-lead">
@@ -87,31 +125,11 @@ export default function PitchcraftPage() {
                 Kaggle capstone and launched daily reports for the World Series. After testing a
                 language model as the report writer, I kept the reports rules-based.
               </p>
-              <FactsStrip
-                facts={[
-                  {
-                    label: 'Built with',
-                    value:
-                      'Claude Code and Codex (code) · Claude Design (design) · GitHub Actions and Vercel',
-                  },
-                  { label: 'Status', value: 'Live · Rules-based reports · v2.2.0' },
-                  { label: 'Infrastructure cost', value: '$0' },
-                  {
-                    label: 'Links',
-                    value: (
-                      <>
-                        <External href={PRODUCT_URL}>Open PitchCraft &#8599;</External> &middot;{' '}
-                        <External href={REPO}>GitHub &#8599;</External>
-                      </>
-                    ),
-                  },
-                ]}
-              />
-              <div className="cta-row">
-                <Link href="/work" className="ghost-link">
-                  &larr; Work
-                </Link>
-              </div>
+              <p className="case-facts">
+                Written at v2.2.0 &middot; November 2026 &middot;{' '}
+                <External href={PRODUCT_URL}>Open PitchCraft &#8599;</External> &middot;{' '}
+                <External href={REPO}>GitHub &#8599;</External>
+              </p>
             </div>
           </div>
         </section>
@@ -119,19 +137,12 @@ export default function PitchcraftPage() {
         <article className="narrative about-narrative" style={{ paddingBottom: 'var(--space-16)' }}>
           <div className="container">
             <Reveal>
-              <div className="prose-narrow">
+              <div className="prose-wide">
                 <CaseFigure
                   bare
                   caption="World Series Game 5 in the PitchCraft postseason archive, November 2026."
                 >
-                  <Image
-                    src="/work/pitchcraft/pitchcraft-game5-desktop.webp"
-                    alt="The PitchCraft page for World Series Game 5: Milwaukee Brewers 4, Tampa Bay Rays 1, with the reasons the game is notable and both starters' final lines."
-                    width={1441}
-                    height={900}
-                    priority
-                    sizes="(min-width: 1024px) 832px, 100vw"
-                  />
+                  <Cover />
                 </CaseFigure>
               </div>
             </Reveal>
@@ -281,11 +292,11 @@ export default function PitchcraftPage() {
                         <div>
                           <p>Before</p>
                           <Image
-                            src="/work/pitchcraft/pitchcraft-game5-before-phone.webp"
+                            src="/work/pitchcraft/pitchcraft-game5-before-crop.webp"
                             alt="The old daily view on a phone: a list of games, a matchup headline and the two starters' season stats."
                             width={375}
-                            height={1390}
-                            sizes="(min-width: 768px) 300px, 45vw"
+                            height={946}
+                            sizes="(min-width: 768px) 320px, calc(100vw - 64px)"
                           />
                         </div>
                         <div>
@@ -295,7 +306,7 @@ export default function PitchcraftPage() {
                             alt="The new game page on a phone: the final score in a scoreboard panel, the reasons the game is notable and both starters' final lines."
                             width={750}
                             height={1892}
-                            sizes="(min-width: 768px) 300px, 45vw"
+                            sizes="(min-width: 768px) 320px, calc(100vw - 64px)"
                           />
                         </div>
                       </div>
