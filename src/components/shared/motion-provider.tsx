@@ -3,14 +3,13 @@
 import { MotionConfig } from 'framer-motion';
 
 /**
- * reducedMotion="user" lets Framer honour prefers-reduced-motion internally:
- * transform and layout animations are dropped, opacity still resolves.
+ * reducedMotion="user" lets Framer honour prefers-reduced-motion for the
+ * motion that still runs through it (the case-card hover lift).
  *
- * This has to be handled inside Framer rather than by branching the component
- * tree on useReducedMotion(). The server has no media query, so it renders the
- * `initial` state as inline `opacity: 0`. If the client then renders a
- * different tree, nothing owns that inline style and it never gets cleared —
- * which left every revealed section invisible for reduced-motion users.
+ * Scroll reveals no longer use Framer: its `initial` state was server-rendered
+ * as inline `opacity: 0`, which hid content without JavaScript, in print and
+ * in full-page captures. Reveal is now CSS plus an IntersectionObserver that
+ * only hides content after the reader scrolls; see reveal.tsx.
  */
 export default function MotionProvider({ children }: { children: React.ReactNode }) {
   return <MotionConfig reducedMotion="user">{children}</MotionConfig>;

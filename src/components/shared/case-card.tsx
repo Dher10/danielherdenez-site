@@ -2,7 +2,7 @@
 
 import { Fragment } from 'react';
 import Link from 'next/link';
-import { motion, useReducedMotion, type Variants } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 
 const MotionLink = motion.create(Link);
 
@@ -18,7 +18,6 @@ export interface CaseCardProps {
   /** Short status chip, e.g. "Coming soon". */
   badge?: string;
   headingLevel?: 2 | 3;
-  variants?: Variants;
 }
 
 export default function CaseCard({
@@ -30,7 +29,6 @@ export default function CaseCard({
   href,
   badge,
   headingLevel = 3,
-  variants,
 }: CaseCardProps) {
   const shouldReduce = useReducedMotion();
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
@@ -67,9 +65,9 @@ export default function CaseCard({
 
   if (!href) {
     return (
-      <motion.div className="case case-inactive" variants={variants}>
+      <div className="case case-inactive">
         {body}
-      </motion.div>
+      </div>
     );
   }
 
@@ -77,7 +75,6 @@ export default function CaseCard({
     <MotionLink
       href={href}
       className="case"
-      variants={variants}
       // The -2px lift is specified in DESIGN.md, but it cannot live in CSS here:
       // this is a motion component, so Framer's inline transform always beats
       // `.case:hover { transform }` from the stylesheet. Background and border

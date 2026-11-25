@@ -1010,6 +1010,30 @@ html, body {
 .case-sources li { font-size: var(--fs-15); line-height: 1.5; color: var(--fg-1); }
 
 /* ============================================================
+   Reveal-on-scroll (progressive enhancement, see reveal.tsx)
+   Content is visible by default. JS adds .is-armed only after the
+   reader scrolls and only while the element is below the viewport,
+   then swaps it for .is-playing when it enters. The hidden state is
+   screen-only and motion-only: print and reduced motion never hide.
+   ============================================================ */
+@media screen and (prefers-reduced-motion: no-preference) {
+  .reveal.is-armed:not(.reveal-stagger),
+  .reveal-stagger.is-armed > * {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  .reveal.is-playing:not(.reveal-stagger) {
+    transition: opacity 700ms var(--ease-out), transform 700ms var(--ease-out);
+  }
+  .reveal-stagger.is-armed > * { transform: translateY(12px); }
+  .reveal-stagger.is-playing > * {
+    transition: opacity 600ms var(--ease-out), transform 600ms var(--ease-out);
+  }
+  .reveal-stagger.is-playing > :nth-child(2) { transition-delay: 80ms; }
+  .reveal-stagger.is-playing > :nth-child(3) { transition-delay: 160ms; }
+}
+
+/* ============================================================
    Reduced motion
    Surgical, not a blanket kill: transform/position motion goes away,
    color and background feedback stays so hover/focus still read.
