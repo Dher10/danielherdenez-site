@@ -11,7 +11,7 @@ Captured for Unit G, which split PitchCraft into two case studies. Rule: `AGENTS
 
 - Source: tag `v1.0.0-kaggle` of `Dher10/pitchcraft-agent`, commit `e32744a82defb41abb7c4675d3712695c00ba7da` (4 July 2026).
 - Exported with `git -C C:\Dev\pitchcraft-agent archive v1.0.0-kaggle` into `C:\Dev\audits\pitchcraft-v1-build\`, outside both repositories; nothing was checked out in pitchcraft-agent, and its working tree was clean afterwards. Built with `npm install` and `npm run build` (Next.js 16.2.9, exit 0), served locally and captured on 25 November 2026.
-- The data is the tag's own cached demo snapshot, as submitted in July.
+- The data is the tag's own cached demo snapshot, as submitted in July: demo values shown next to real player names, not real statistics. The case 03 cover caption says so: "The Kaggle version and its cached demo data, rebuilt from the v1.0.0-kaggle tag in November 2026."
 - The case 03 cover (`public/work/pitchcraft-v1-kaggle/pitchcraft-v1-desktop.webp`, `pitchcraft-v1-cover-phone.webp`) and share image (`og.png`) come from this rebuild.
 
 ## Final case pages on danielherdenez.com

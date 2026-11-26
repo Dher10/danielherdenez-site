@@ -43,6 +43,17 @@ Naming note: "Unit G" is the name of this run's brief. It is not backlog item G 
 - Playwright against `next start` on port 3000: **153 passed**. Server stopped and port 3000 confirmed free.
 - External links on both pages (read-only HTTP, following redirects): all 200, including every `v1.0.0-kaggle` and `fd96889` path and the live app. The canonical URLs on danielherdenez.com return 404 until the merge reaches production (backlog G). LinkedIn (footer) answers 999 to scripted requests, as before.
 - `git status` after staging: `.claude/settings.local.json` not included.
+- Commits on `dev`: `3c87e4c` (editorial source, Unit F records, .gitignore), `d05ece8` (the split), `a04dc44` (tests), `c5d291a` (docs, captures, this report). Pushed.
+- **CI run [45740160753](https://github.com/Dher10/danielherdenez-site/actions/runs/45740160753) on `c5d291a`: passed.** Guard and hook tests: 817 passed. Playwright: 153 passed.
+
+## Closing (2026-11-25)
+
+Daniel updated file 05 §2 after seeing the rebuild: it shows the cached demo snapshot, with demo values next to real player names.
+
+- Case 03 cover caption now reads "The Kaggle version and its cached demo data, rebuilt from the v1.0.0-kaggle tag in November 2026." The cover alt and the share image alt also say it is the cached demo, with no player names or stats. `tests/pitchcraft-v1.spec.ts` checks the new caption; the text comparison against file 01 is unaffected (the cover caption comes from file 05).
+- Captures README states the rebuild runs on demo data. The two final case 03 page captures (`pitchcraft-v1-kaggle-1280.webp`, `-390.webp`) were retaken from this build so they show the new caption; the case 04 captures did not change.
+- `AGENTS.md` "Contexto abierto": the note on content invisible without JavaScript now describes the current `reveal.tsx` (visible by default, armed only after scroll, hidden state limited to screen and motion), and the "truly visible" note points to the existing `expectTrulyVisible` and `expectAllRevealsVisible` in `tests/reveal.spec.ts`.
+- Verification: `eslint` exit 0, `tsc --noEmit` exit 0, `npm run build` 12 static pages; guard and hook tests 816 passed, 1 skipped; Playwright against `next start` on port 3000: **153 passed**. Server stopped, port 3000 free.
 
 ## Notes for Daniel
 

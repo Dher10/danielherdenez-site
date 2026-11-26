@@ -33,7 +33,7 @@ export const metadata: Metadata = createPageMetadata({
   path: ROUTE,
   title: `${title} — Daniel Herdenez`,
   description,
-  image: { path: `${ASSETS}/og.png`, alt: 'PitchCraft v1: the Kaggle version, rebuilt from the v1.0.0-kaggle tag' },
+  image: { path: `${ASSETS}/og.png`, alt: 'PitchCraft v1: the Kaggle version with its cached demo data, rebuilt from the v1.0.0-kaggle tag' },
 });
 
 const articleLd = {
@@ -69,8 +69,10 @@ const sources = [
   { label: 'Original reporting pipeline', href: `${TAG}/agents` },
 ];
 
+// The rebuild runs on the tag's cached demo snapshot: demo values beside real
+// player names. Caption and alt say so (file 05, section 2); no names or stats here.
 const COVER_ALT =
-  'The Kaggle version of PitchCraft: a strip of upcoming games and the Pittsburgh at Washington matchup report, with a profile card for each starting pitcher.';
+  'The Kaggle version of PitchCraft running on its cached demo data: a strip of upcoming games and a matchup report with a profile card for each starting pitcher.';
 
 export default function PitchcraftV1Page() {
   return (
@@ -107,7 +109,7 @@ export default function PitchcraftV1Page() {
           <div className="container">
             <Reveal>
               <div className="prose-wide">
-                <CaseFigure bare caption="The Kaggle version, rebuilt from the v1.0.0-kaggle tag in November 2026.">
+                <CaseFigure bare caption="The Kaggle version and its cached demo data, rebuilt from the v1.0.0-kaggle tag in November 2026.">
                   <CaseCover
                     alt={COVER_ALT}
                     desktop={{ src: `${ASSETS}/pitchcraft-v1-desktop.webp`, width: 1440, height: 900 }}

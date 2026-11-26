@@ -13,7 +13,7 @@
 
 - Rebuild the `v1.0.0-kaggle` version from the PitchCraft repository tag and capture it. Work outside both repositories (export the tag with `git archive`; never check out, branch or change anything in `pitchcraft-agent`).
 - Capture the main matchup view at desktop size, plus a phone crop, with the same treatment as the case 04 cover.
-- Approved caption: "The Kaggle version, rebuilt from the v1.0.0-kaggle tag in November 2026."
+- Approved caption (updated 25 Nov, after seeing the rebuild): "The Kaggle version and its cached demo data, rebuilt from the v1.0.0-kaggle tag in November 2026." The rebuilt view shows the cached demo snapshot, with demo values next to real player names; the caption says so instead of presenting them as real statistics.
 - If the tag cannot be built and run after two attempts, stop and report. Do not substitute another image.
 
 ## 3. Assets

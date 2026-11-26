@@ -57,7 +57,7 @@ test.describe('Case 03: PitchCraft v1 · Kaggle', () => {
     await page.goto(ROUTE);
     const figure = page.locator('.prose-wide .case-figure').first();
     await expect(figure.locator('figcaption')).toHaveText(
-      'The Kaggle version, rebuilt from the v1.0.0-kaggle tag in November 2026.',
+      'The Kaggle version and its cached demo data, rebuilt from the v1.0.0-kaggle tag in November 2026.',
     );
     const cover = figure.locator('img');
     expect((await cover.getAttribute('alt'))?.length ?? 0).toBeGreaterThan(20);
