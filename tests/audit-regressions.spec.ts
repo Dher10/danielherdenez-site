@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const routes = ['/', '/about', '/work', '/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft'];
+const routes = ['/', '/about', '/work', '/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft-v1-kaggle', '/work/pitchcraft-v2-world-series'];
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -84,7 +84,10 @@ test('every route shares its own title, description and URL', async ({ page }) =
     await expect(page.locator('meta[property="og:url"]')).toHaveAttribute(
       'content', `https://danielherdenez.com${route === '/' ? '' : route}`,
     );
-    const ogImage = route === '/work/pitchcraft' ? /\/work\/pitchcraft\/og\.png$/ : /\/og-image\.png$/;
+    // Each PitchCraft case has its own share image in its asset folder.
+    const ogImage = route.startsWith('/work/pitchcraft-')
+      ? `https://danielherdenez.com${route}/og.png`
+      : /\/og-image\.png$/;
     await expect(page.locator('meta[property="og:image"]')).toHaveAttribute('content', ogImage);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
       'href', `https://danielherdenez.com${route === '/' ? '' : route}`,
@@ -122,7 +125,7 @@ test('case links navigate without replacing the document and support browser bac
   expect(documents).toEqual([]);
   await page.goBack();
   await expect(page).toHaveURL(/\/work$/);
-  await expect(page.locator('a.case')).toHaveCount(3);
+  await expect(page.locator('a.case')).toHaveCount(4);
 });
 
 test('case-to-case navigation from More work resets scroll to the top', async ({ page }) => {
@@ -136,7 +139,14 @@ test('case-to-case navigation from More work resets scroll to the top', async ({
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
 
-const INNER = ['/about', '/work', '/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft'];
+const INNER = [
+  '/about',
+  '/work',
+  '/work/veflo-trace',
+  '/work/internal-platform',
+  '/work/pitchcraft-v1-kaggle',
+  '/work/pitchcraft-v2-world-series',
+];
 
 for (const [width, height, maxGap] of [[390, 844, 56], [1280, 900, 104]] as const) {
   test(`inner pages share one compact top spacing at ${width}px`, async ({ page }) => {
@@ -165,7 +175,7 @@ test('/work has no second gap between the heading and the first card', async ({ 
 for (const theme of ['dark', 'light'] as const) {
   test(`scrolled nav surface is near-opaque (${theme})`, async ({ page }) => {
     await page.addInitScript((t) => localStorage.setItem('dh-theme', t), theme);
-    await page.goto('/work/pitchcraft');
+    await page.goto('/work/pitchcraft-v2-world-series');
     await page.evaluate(() => window.scrollTo({ top: 800, behavior: 'instant' }));
     const nav = page.locator('.nav');
     await expect(nav).toHaveClass(/scrolled/);

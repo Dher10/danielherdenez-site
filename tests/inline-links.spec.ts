@@ -7,7 +7,14 @@ import { test, expect, type Page } from '@playwright/test';
  */
 const ACCENT = { dark: 'rgb(123, 159, 146)', light: 'rgb(74, 107, 95)' };
 const SELECTOR = ':is(.about-prose, .about-body, .case-facts, .case-sources) a:not([class])';
-const ROUTES = ['/about', '/work/pitchcraft', '/work/veflo-trace', '/work/internal-platform', '/'];
+const ROUTES = [
+  '/about',
+  '/work/pitchcraft-v1-kaggle',
+  '/work/pitchcraft-v2-world-series',
+  '/work/veflo-trace',
+  '/work/internal-platform',
+  '/',
+];
 
 test.use({ contextOptions: { reducedMotion: 'reduce' } });
 
@@ -16,17 +23,22 @@ async function setTheme(page: Page, theme: 'dark' | 'light') {
 }
 
 for (const theme of ['dark', 'light'] as const) {
-  test(`About links to the case with an underlined sage link (${theme})`, async ({ page }) => {
+  test(`About links to both PitchCraft cases with underlined sage links (${theme})`, async ({ page }) => {
     await setTheme(page, theme);
     await page.goto('/about');
-    const link = page.getByRole('link', { name: 'The case study' });
-    await expect(link).toHaveAttribute('href', '/work/pitchcraft');
-    const style = await link.evaluate((el) => {
-      const s = getComputedStyle(el);
-      return { color: s.color, line: s.textDecorationLine };
-    });
-    expect(style.color).toBe(ACCENT[theme]);
-    expect(style.line).toContain('underline');
+    for (const [name, href] of [
+      ['the Kaggle capstone', '/work/pitchcraft-v1-kaggle'],
+      ['the live product', '/work/pitchcraft-v2-world-series'],
+    ]) {
+      const link = page.getByRole('link', { name, exact: true });
+      await expect(link).toHaveAttribute('href', href);
+      const style = await link.evaluate((el) => {
+        const s = getComputedStyle(el);
+        return { color: s.color, line: s.textDecorationLine };
+      });
+      expect(style.color).toBe(ACCENT[theme]);
+      expect(style.line).toContain('underline');
+    }
   });
 
   test(`every inline prose link uses the same rule (${theme})`, async ({ page }) => {
@@ -46,7 +58,8 @@ for (const theme of ['dark', 'light'] as const) {
       }
       checked += styles.length;
     }
-    // About's case link, the two facts-line links and eight PitchCraft sources.
-    expect(checked).toBeGreaterThanOrEqual(11);
+    // About's two case links; per PitchCraft case, its two facts-line links,
+    // its cross-link and its sources (3 on case 03, 10 on case 04).
+    expect(checked).toBeGreaterThanOrEqual(2 + (2 + 1 + 3) + (2 + 1 + 10));
   });
 }

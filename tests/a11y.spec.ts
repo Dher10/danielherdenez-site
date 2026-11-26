@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const ROUTES = ['/', '/about', '/work', '/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft'];
+const ROUTES = ['/', '/about', '/work', '/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft-v1-kaggle', '/work/pitchcraft-v2-world-series'];
 
 // --- Contrast helpers (run in Node test context, not browser) ---
 function relativeLuminance(rgb: { r: number; g: number; b: number }): number {
@@ -288,17 +288,18 @@ test.describe('No dead links', () => {
     });
   }
 
-  test('case 03 links to the PitchCraft case study', async ({ page }) => {
+  test('cases 03 and 04 link to the two PitchCraft case studies', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.case-inactive')).toHaveCount(0);
-    await expect(page.locator('a.case[href="/work/pitchcraft"]')).toHaveCount(1);
+    await expect(page.locator('a.case[href="/work/pitchcraft-v1-kaggle"]')).toHaveCount(1);
+    await expect(page.locator('a.case[href="/work/pitchcraft-v2-world-series"]')).toHaveCount(1);
   });
 
-  test('the three work cards are all links on /work', async ({ page }) => {
+  test('the four work cards are all links on /work', async ({ page }) => {
     await page.goto('/work');
-    await expect(page.locator('.case')).toHaveCount(3);
+    await expect(page.locator('.case')).toHaveCount(4);
     await expect(page.locator('.case-inactive')).toHaveCount(0);
-    await expect(page.locator('a.case')).toHaveCount(3);
+    await expect(page.locator('a.case')).toHaveCount(4);
   });
 
   test('internal-platform prose no longer links to a missing route', async ({ page }) => {

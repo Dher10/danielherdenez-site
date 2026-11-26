@@ -76,10 +76,10 @@ test.describe('Section 2 — Hero', () => {
     await page.goto(URL);
   });
 
-  test('eyebrow "New case study · PitchCraft" links to the case', async ({ page }) => {
+  test('eyebrow "New case studies · PitchCraft" links to Work', async ({ page }) => {
     const eyebrow = page.locator('.hero .eyebrow');
-    await expect(eyebrow).toContainText('New case study · PitchCraft');
-    await expect(eyebrow.locator('a')).toHaveAttribute('href', '/work/pitchcraft');
+    await expect(eyebrow).toHaveText('New case studies · PitchCraft');
+    await expect(eyebrow.locator('a')).toHaveAttribute('href', '/work');
   });
 
   test('h1 contains "Product Manager" and "shipped products"', async ({ page }) => {
@@ -152,8 +152,8 @@ test.describe('Section 4 — Work', () => {
     await expect(page.locator('#work')).toBeAttached();
   });
 
-  test('3 case cards exist', async ({ page }) => {
-    await expect(page.locator('.case')).toHaveCount(3);
+  test('4 case cards exist', async ({ page }) => {
+    await expect(page.locator('.case')).toHaveCount(4);
   });
 
   test('card 1 title contains "workflow software"', async ({ page }) => {
@@ -164,8 +164,12 @@ test.describe('Section 4 — Work', () => {
     await expect(page.locator('.case').nth(1).locator('h3')).toContainText('agentic build system');
   });
 
-  test('card 3 title contains "Kaggle capstone"', async ({ page }) => {
-    await expect(page.locator('.case').nth(2).locator('h3')).toContainText('Kaggle capstone');
+  test('card 3 title contains "verifiable claims"', async ({ page }) => {
+    await expect(page.locator('.case').nth(2).locator('h3')).toContainText('verifiable claims');
+  });
+
+  test('card 4 title contains "Kaggle capstone"', async ({ page }) => {
+    await expect(page.locator('.case').nth(3).locator('h3')).toContainText('Kaggle capstone');
   });
 
   test('cards 1 and 2 are side by side (same row) at 1280px', async ({ page }) => {

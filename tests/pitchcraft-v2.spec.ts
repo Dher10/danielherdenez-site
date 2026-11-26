@@ -1,0 +1,201 @@
+import { test, expect } from '@playwright/test';
+import { normalize, pageBlocks, readCopy } from './support/editorial-copy';
+
+const ROUTE = '/work/pitchcraft-v2-world-series';
+const COPY = readCopy('02_PitchCraft_v2_World_Series_Copy.md');
+
+test.use({ contextOptions: { reducedMotion: 'reduce' } });
+
+test.describe('Case 04: PitchCraft v2 · World Series', () => {
+  test('visible text matches file 02 word for word, in order', async ({ page }) => {
+    await page.goto(ROUTE);
+    expect(await pageBlocks(page)).toEqual(COPY.blocks);
+  });
+
+  test('every link in file 02 is on the page with its exact destination', async ({ page }) => {
+    await page.goto(ROUTE);
+    for (const { text, href } of COPY.links) {
+      const links = page.locator(`main a[href="${href}"]`).filter({ hasText: text });
+      expect(await links.count(), `${text} -> ${href}`).toBeGreaterThanOrEqual(1);
+    }
+  });
+
+  test('no implementation note is rendered', async ({ page }) => {
+    await page.goto(ROUTE);
+    const text = (await page.locator('main').textContent())!;
+    expect(text).not.toMatch(/\[(label|Figure|Cover|closing|pull|serif)/i);
+  });
+
+  test('title, facts line and chapter labels render', async ({ page }) => {
+    await page.goto(ROUTE);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+      'From a Kaggle capstone to a live baseball product',
+    );
+    await expect(page.locator('h2.stage-label')).toHaveCount(7);
+    const facts = page.locator('.page-hero .case-facts');
+    expect(normalize((await facts.textContent())!)).toBe('Written at v2.2.0 · November 2026 · Open PitchCraft · GitHub');
+    const follows = await facts.evaluate((el) => el.previousElementSibling?.classList.contains('case-lead'));
+    expect(follows).toBe(true);
+    const links = facts.locator('a');
+    await expect(links.nth(0)).toHaveAttribute('href', 'https://pitchcraft-agent.vercel.app/');
+    await expect(links.nth(1)).toHaveAttribute('href', 'https://github.com/Dher10/pitchcraft-agent/tree/fd96889');
+  });
+
+  test('cross-link to case 03 sits in the first body paragraph', async ({ page }) => {
+    await page.goto(ROUTE);
+    const first = page.locator('article .about-prose > p').first();
+    const link = first.getByRole('link', { name: "my capstone for Kaggle's AI Agents Intensive", exact: true });
+    await expect(link).toHaveAttribute('href', '/work/pitchcraft-v1-kaggle');
+    await expect(link).not.toHaveAttribute('target', /.+/);
+  });
+
+  test('cover keeps its approved caption and is art-directed', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(ROUTE);
+    const figure = page.locator('.prose-wide .case-figure').first();
+    await expect(figure.locator('figcaption')).toHaveText(
+      'World Series Game 5 in the PitchCraft postseason archive, November 2026.',
+    );
+    const cover = figure.locator('img');
+    await expect.poll(() => cover.evaluate((img: HTMLImageElement) => decodeURIComponent(img.currentSrc))).toContain(
+      '/work/pitchcraft-v2-world-series/pitchcraft-game5-cover-phone',
+    );
+    const phoneBox = await cover.boundingBox();
+    const proseWidth = await page.locator('.prose-wide').first().evaluate((el) => el.clientWidth);
+    expect(Math.round(phoneBox!.width)).toBe(proseWidth);
+
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(ROUTE);
+    await expect.poll(() => cover.evaluate((img: HTMLImageElement) => decodeURIComponent(img.currentSrc))).toContain('game5-desktop');
+    // sizes reaches the <source>: an 832px slot at DPR 1 never needs the 1920w rendition.
+    const width = Number(new URL(await cover.evaluate((img: HTMLImageElement) => img.currentSrc)).searchParams.get('w'));
+    expect(width).toBeLessThanOrEqual(1080);
+  });
+
+  test('figures follow file 02: pipeline, eval right after its paragraph, before/after last', async ({ page }) => {
+    await page.goto(ROUTE);
+    const stage = (label: string) =>
+      page.locator('.stage').filter({ has: page.locator('h2.stage-label', { hasText: label }) });
+    await expect(stage('Live for the World Series').locator('.pipeline-step')).toHaveCount(5);
+    await expect(stage('A product between seasons').locator('.before-after img')).toHaveCount(2);
+
+    // The eval figure follows the paragraph it illustrates and precedes the pull quote.
+    const evalFigure = stage('Testing an AI writer').locator('.case-figure');
+    await expect(evalFigure).toHaveCount(1);
+    const neighbours = await evalFigure.evaluate((fig) => ({
+      before: fig.previousElementSibling?.textContent ?? '',
+      after: fig.nextElementSibling?.className ?? '',
+    }));
+    expect(neighbours.before).toContain('They flagged 40 test sentences, of which 36 had support');
+    expect(neighbours.after).toContain('pull');
+
+    const captions = await page.locator('article .about-prose figcaption').allTextContents();
+    expect(captions.map(normalize)).toEqual([
+      'A scheduled job fetches the data and the agents write the report. The critic checks its claims, and the job validates the file against the data contract before it publishes.',
+      'Test set of the writer evaluation, labeled by me.',
+      'World Series Game 5 in the daily view and in the postseason archive. The left view was recreated in November from the file published on October 28.',
+    ]);
+  });
+
+  test('figures have captions and accessible content', async ({ page }) => {
+    await page.goto(ROUTE);
+    await expect(page.locator('.case-figure')).toHaveCount(4);
+    await expect(page.locator('.case-figure figcaption')).toHaveCount(4);
+    await expect(page.getByRole('img', { name: /36 of 40/ })).toBeAttached();
+    await expect(page.getByRole('img', { name: /3 of 5/ })).toBeAttached();
+    for (const img of await page.locator('.case-figure img').all()) {
+      expect((await img.getAttribute('alt'))?.length ?? 0).toBeGreaterThan(20);
+    }
+  });
+
+  test('before and after crops share height and scale; stacked on mobile', async ({ page }) => {
+    await page.goto(ROUTE);
+    const imgs = page.locator('.before-after img');
+    await expect(imgs).toHaveCount(2);
+    await imgs.first().scrollIntoViewIfNeeded();
+    const [a, b] = [await imgs.nth(0).boundingBox(), await imgs.nth(1).boundingBox()];
+    expect(Math.abs(a!.width - b!.width)).toBeLessThanOrEqual(1);
+    expect(Math.abs(a!.height - b!.height)).toBeLessThanOrEqual(1);
+    expect(Math.abs(a!.y - b!.y)).toBeLessThanOrEqual(1); // side by side
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(ROUTE);
+    const [c, d] = [await imgs.nth(0).boundingBox(), await imgs.nth(1).boundingBox()];
+    expect(d!.y).toBeGreaterThan(c!.y + c!.height); // stacked
+    expect(Math.abs(c!.height - d!.height)).toBeLessThanOrEqual(1);
+  });
+
+  for (const viewport of [
+    { name: 'mobile', width: 390, height: 844 },
+    { name: 'desktop', width: 1280, height: 900 },
+  ]) {
+    test(`print from a fresh load has every case image loaded (${viewport.name})`, async ({ page }) => {
+      // Lazy images below the fold never load in print. No scrolling: a fresh load, then print.
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.emulateMedia({ media: 'print' });
+      await page.goto(ROUTE);
+      const imgs = page.locator('article img');
+      expect(await imgs.count()).toBeGreaterThanOrEqual(3);
+      for (const img of await imgs.all()) {
+        await expect(img).not.toHaveAttribute('loading', 'lazy');
+        await expect
+          .poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0))
+          .toBe(true);
+        const box = await img.boundingBox();
+        expect(box?.width ?? 0).toBeGreaterThan(0);
+        expect(box?.height ?? 0).toBeGreaterThan(0);
+      }
+      const pdf = await page.pdf();
+      expect(pdf.byteLength).toBeGreaterThan(0);
+    });
+  }
+
+  test('eval units differ in shape, not only color', async ({ page }) => {
+    await page.goto(ROUTE);
+    const plain = page.locator('.units .unit:not(.unit-marked)').first();
+    const marked = page.locator('.units-sentence .unit-marked').first();
+    const style = (l: typeof plain) =>
+      l.evaluate((el) => {
+        const s = getComputedStyle(el);
+        return { bg: s.backgroundColor, radius: s.borderTopLeftRadius, border: s.borderTopWidth };
+      });
+    const p = await style(plain);
+    const m = await style(marked);
+    expect(p.bg).toBe('rgba(0, 0, 0, 0)'); // outlined
+    expect(parseFloat(p.border)).toBeGreaterThan(1);
+    expect(m.bg).not.toBe('rgba(0, 0, 0, 0)'); // filled
+    expect(parseFloat(m.radius)).toBeGreaterThan(parseFloat(p.radius)); // circle vs square
+  });
+
+  test('external links open in a new tab; sources are pinned to fd96889 or the Kaggle tag', async ({ page }) => {
+    await page.goto(ROUTE);
+    for (const link of await page.locator('main a[href^="https://"]').all()) {
+      await expect(link).toHaveAttribute('target', '_blank');
+      await expect(link).toHaveAttribute('rel', /noopener/);
+    }
+    const sources = page.locator('.case-sources a');
+    await expect(sources).toHaveCount(10);
+    for (const link of await sources.all()) {
+      await expect(link).toHaveAttribute('href', /pitchcraft-agent\/(blob|tree)\/(fd96889|v1\.0\.0-kaggle)\//);
+    }
+  });
+
+  test('serves Article JSON-LD without JavaScript', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto(ROUTE);
+    const data = JSON.parse((await page.locator('script[type="application/ld+json"]').first().textContent())!);
+    expect(data['@type']).toBe('Article');
+    expect(data.headline).toBe('From a Kaggle capstone to a live baseball product');
+    expect(data.url).toBe(`https://danielherdenez.com${ROUTE}`);
+    expect(data.image).toBe(`https://danielherdenez.com${ROUTE}/og.png`);
+    await context.close();
+  });
+
+  test('More work lists the other three cases, never this one', async ({ page }) => {
+    await page.goto(ROUTE);
+    const hrefs = await page.locator('section.work a.case').evaluateAll((els) => els.map((el) => el.getAttribute('href')));
+    expect(hrefs).toEqual(['/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft-v1-kaggle']);
+    await expect(page.locator(`main a[href="${ROUTE}"]`)).toHaveCount(0);
+  });
+});

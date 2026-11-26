@@ -49,20 +49,25 @@ async function scrollUntilArmed(page: Page) {
   await expect(armed.first()).toBeAttached();
 }
 
-const ROUTES = ['/', '/about', '/work', '/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft'];
+const ROUTES = ['/', '/about', '/work', '/work/veflo-trace', '/work/internal-platform', '/work/pitchcraft-v1-kaggle', '/work/pitchcraft-v2-world-series'];
 
 test.describe('Reveal: content is visible by default', () => {
-  test('PitchCraft article and cover are visible with JavaScript disabled', async ({ browser }) => {
-    const context = await browser.newContext({ javaScriptEnabled: false });
-    const page = await context.newPage();
-    await page.goto('/work/pitchcraft');
-    await expectTrulyVisible(page.locator('article'), 'article');
-    await expectTrulyVisible(page.locator('.case-figure img').first(), 'cover');
-    await expectTrulyVisible(page.getByRole('heading', { name: 'Still open', level: 2 }), 'last chapter');
-    await expectTrulyVisible(page.getByRole('heading', { name: 'More work', level: 2 }), 'More work');
-    await expectAllRevealsVisible(page, '/work/pitchcraft');
-    await context.close();
-  });
+  for (const [route, lastChapter] of [
+    ['/work/pitchcraft-v1-kaggle', 'The first version'],
+    ['/work/pitchcraft-v2-world-series', "What's next"],
+  ]) {
+    test(`${route} article and cover are visible with JavaScript disabled`, async ({ browser }) => {
+      const context = await browser.newContext({ javaScriptEnabled: false });
+      const page = await context.newPage();
+      await page.goto(route);
+      await expectTrulyVisible(page.locator('article'), 'article');
+      await expectTrulyVisible(page.locator('.case-figure img').first(), 'cover');
+      await expectTrulyVisible(page.getByRole('heading', { name: lastChapter, level: 2 }), 'last chapter');
+      await expectTrulyVisible(page.getByRole('heading', { name: 'More work', level: 2 }), 'More work');
+      await expectAllRevealsVisible(page, route);
+      await context.close();
+    });
+  }
 
   test('every page renders its revealed blocks visible with JavaScript disabled', async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
@@ -76,14 +81,14 @@ test.describe('Reveal: content is visible by default', () => {
 
   test('print media shows the whole PitchCraft case', async ({ page }) => {
     await page.emulateMedia({ media: 'print', reducedMotion: 'no-preference' });
-    await page.goto('/work/pitchcraft');
-    await expectAllRevealsVisible(page, 'print /work/pitchcraft');
+    await page.goto('/work/pitchcraft-v2-world-series');
+    await expectAllRevealsVisible(page, 'print /work/pitchcraft-v2-world-series');
     await expectTrulyVisible(page.locator('.case-figure img').first(), 'print cover');
   });
 
   test('print media still shows content armed by an earlier scroll', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
-    await page.goto('/work/pitchcraft');
+    await page.goto('/work/pitchcraft-v2-world-series');
     await page.locator('.theme-toggle').click(); // hydration
     await scrollUntilArmed(page);
     await page.emulateMedia({ media: 'print' });
