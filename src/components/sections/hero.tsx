@@ -8,7 +8,7 @@ export default function Hero() {
       <HeroMesh />
       <div className="container hero-inner">
         <Eyebrow>
-          <Link href="/work/pitchcraft">New case study · PitchCraft</Link>
+          <Link href="/work">New case studies · PitchCraft</Link>
         </Eyebrow>
         <h1>
           Product Manager. I turn complex problems into{' '}

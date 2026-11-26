@@ -5,7 +5,7 @@ import Footer from '@/components/sections/footer';
 import CaseCard from '@/components/shared/case-card';
 import Eyebrow from '@/components/shared/eyebrow';
 import Reveal from '@/components/shared/reveal';
-import { pitchcraft, vefloTrace } from '@/lib/cases';
+import { otherCases } from '@/lib/cases';
 import { createPageMetadata } from '@/lib/metadata';
 
 export const metadata: Metadata = createPageMetadata({
@@ -132,8 +132,9 @@ export default function InternalPlatformPage() {
 
             <Reveal>
               <div className="work-grid">
-                <CaseCard {...vefloTrace} />
-                <CaseCard {...pitchcraft} />
+                {otherCases('/work/internal-platform').map((c) => (
+                  <CaseCard key={c.href} {...c} />
+                ))}
               </div>
             </Reveal>
           </div>

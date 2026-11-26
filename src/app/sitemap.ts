@@ -22,7 +22,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
-      url: `${BASE_URL}/work/pitchcraft`,
+      url: `${BASE_URL}/work/pitchcraft-v1-kaggle`,
+      lastModified,
+      changeFrequency: 'yearly',
+      priority: 0.7,
+    },
+    {
+      url: `${BASE_URL}/work/pitchcraft-v2-world-series`,
       lastModified,
       changeFrequency: 'yearly',
       priority: 0.7,

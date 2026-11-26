@@ -186,8 +186,9 @@ export default function AboutPage() {
                 <p>
                   PitchCraft is one of the things I&apos;ve built this way. It started as a Kaggle
                   capstone and became a live baseball product, built end to end with AI coding
-                  agents. <Link href="/work/pitchcraft">The case study</Link> tells how it got
-                  there.
+                  agents. Two case studies tell how it got there:{' '}
+                  <Link href="/work/pitchcraft-v1-kaggle">the Kaggle capstone</Link> and{' '}
+                  <Link href="/work/pitchcraft-v2-world-series">the live product</Link>.
                 </p>
               </div>
             </Reveal>
