@@ -44,7 +44,7 @@ The shipped site has moved away from this spec in the places below. They are rec
 | 3 | Work grid card 3 is `col-start-3 col-span-8` | **Resolved 2026-11-24:** back to the spec, `grid-column: 3 / span 8` (it had shipped as `4 / span 6`, which left the lone card floating; audit E12) | Pre-existing, resolved in Unit F |
 | 4 | Reduced motion clamps every animation and transition to `0.001ms` through a global rule in `globals.css` | A scoped block disables the hero mesh drift, smooth scrolling and the hover lifts, and leaves colour transitions alone. Framer Motion is covered by `MotionConfig reducedMotion="user"` in the root layout instead of per-component `useReducedMotion()` | Changed 2026-09-05 |
 | 5 | Scrolled nav: `blur(14px)` and an 80% mix of `--bg-0` | `blur(20px)` and a **95%** mix of `--bg-0`, same hairline. At 80% the shapes and colors of screenshots and text scrolling underneath showed through as a band (audit E07) | Changed 2026-11-24 (Unit F) |
-| 6 | Reveal-on-scroll: Framer `whileInView` from `{opacity: 0, y: 16}` | Content is **visible by default**. `Reveal` is a plain `div` plus an IntersectionObserver: nothing is hidden until the reader scrolls, then a block still below the viewport is armed (`.is-armed`) and fades up 16px over 700ms when it enters (`.is-playing`). The hidden state is CSS inside `@media screen and (prefers-reduced-motion: no-preference)`, so no-JS, print, crawlers, full-page captures and reduced motion never hide content. The home card stagger (`<Reveal stagger>`) uses the same mechanism with 80ms steps. Framer's SSR `opacity: 0` hid content without JavaScript (audit E01) | Changed 2026-11-24 (Unit F) |
+| 6 | Reveal-on-scroll: Framer `whileInView` from `{opacity: 0, y: 16}` | Content is **visible by default**. `Reveal` is a plain `div` plus a scroll-frame layout check: nothing is hidden until the reader scrolls, then a block still below the viewport is armed (`.is-armed`) and fades up 16px over 700ms when it enters (`.is-playing`). The hidden state is CSS inside `@media screen and (prefers-reduced-motion: no-preference)`, so no-JS, print, crawlers, full-page captures and reduced motion never hide content. The home card stagger (`<Reveal stagger>`) uses the same mechanism with 80ms steps. Framer's SSR `opacity: 0` hid content without JavaScript (audit E01) | Changed 2026-11-24 (Unit F) |
 
 Deviation 4 needs context: the `0.001ms` rule was never actually implemented. The accessibility pass on 2026-09-05 found no `prefers-reduced-motion` CSS at all and added the scoped version, which keeps hover and focus feedback readable instead of freezing colour changes along with movement.
 
@@ -99,7 +99,7 @@ components/
     ├── monogram.tsx        # Lowercase "d" in Instrument Serif
     ├── eyebrow.tsx         # Mono label with optional accent dot
     ├── section-head.tsx    # Index ("01 — Work") + serif h2
-    ├── reveal.tsx          # IntersectionObserver fade-up wrapper (Framer Motion)
+    ├── reveal.tsx          # scroll-checked fade-up wrapper (CSS classes, no Framer)
     └── hero-mesh.tsx       # Animated radial gradients
 ```
 
@@ -168,7 +168,7 @@ There is **no other logo lockup or icon**. Do not generate one.
 - **Border-bottom**: 1px `var(--hairline)`.
 - **Background**: Two slow-drifting radial gradients (sage accent at low opacity, blurred 60px). Animate via Framer Motion or pure CSS keyframes — durations 18s and 22s, both `cubic-bezier(0.65, 0, 0.35, 1)` infinite alternate. Disable under `prefers-reduced-motion`.
 - **Eyebrow**: `available · summer 2026` — Geist Mono 12px, `var(--fg-2)`, with a 6×6px sage dot (4px sage-soft ring via `box-shadow`).
-  > **Updated 2026-11-20.** The shipped eyebrow reads `New case study · PitchCraft` and links to `/work/pitchcraft`. The link inherits the eyebrow color and turns `var(--fg-0)` on hover; the dot and type are unchanged.
+  > **Updated 2026-11-20.** The shipped eyebrow reads `New case studies · PitchCraft` and links to `/work` (updated 2026-11-25, Unit G; it read `New case study · PitchCraft` with a link to the single case before). The link inherits the eyebrow color and turns `var(--fg-0)` on hover; the dot and type are unchanged.
 - **Headline (h1)**: Instrument Serif 400, `clamp(2.5rem, 5vw + 1rem, 5rem)`, line-height 1.02, letter-spacing -0.025em. `max-width: 22ch`. Exact copy:
   > **Product Manager. I turn complex problems into *shipped products*.**
 
@@ -199,9 +199,8 @@ There is **no other logo lockup or icon**. Do not generate one.
   - Index: `01 — Work` — Geist Mono 12px, `var(--fg-2)`, `min-width: 10ch`.
   - Heading: Instrument Serif 400, `clamp(1.75rem, 2.5vw + 1rem, 2.5rem)`, line-height 1.1, max `24ch`. Copy: **"What I'm building right now."**
 - **Grid**: 12-col CSS grid on desktop.
-  - Card 1: `col-start-1 col-span-6`
-  - Card 2: `col-start-7 col-span-6`
-  - Card 3: `col-start-3 col-span-8` (offset on row 2)
+  - Two cards per row: odd cards `col-start-1 col-span-6`, even cards `col-start-7 col-span-6`. Home and `/work` show the four cases as two rows of two (since 2026-11-25, Unit G).
+  - Centered third card, `col-start-3 col-span-8` (offset on row 2): **only in a grid of exactly three cards**, which today is each case's "More work" (the other three cases). CSS: `.work-grid .case:nth-child(3):last-child`. A grid of four never centers its third card.
   - Gap: `var(--space-4)` (16px). Mobile: single column.
 - **Each card**: `<a>` link, `var(--bg-2)` background, 1px `var(--hairline)` border, `var(--radius-lg)` (12px), padding `var(--space-8)` / `var(--space-10)` desktop. Flex column gap `var(--space-5)`, min-height 280px. (In light mode the border and shadow are overridden — see **Card hover** and **Colors — Light**.)
   - Hover: lifts `-2px`, background → `var(--bg-3)`, border → `var(--hairline-strong)`.
@@ -254,15 +253,15 @@ There is **no other logo lockup or icon**. Do not generate one.
 
 ### 7. Case study pieces
 
-Added 2026-11-20 with `/work/pitchcraft`. Tokens only, no new colors. Styles live in the "Case study pieces" block of `globals.css`.
+Added 2026-11-20 with the PitchCraft case (split on 2026-11-25 into `/work/pitchcraft-v1-kaggle` and `/work/pitchcraft-v2-world-series`; both use these pieces). Tokens only, no new colors. Styles live in the "Case study pieces" block of `globals.css`.
 
 Revised 2026-11-24 (Unit F, from the Unit E audit).
 
-- **Facts line** (`.case-facts`): one line directly under the lead, Geist Mono 13px, `--fg-2`, wrapping naturally on a phone; its links follow the inline-link rule (section 8) and never break inside a link. PitchCraft's line is the approved "Written at v2.2.0 · November 2026 · Open PitchCraft ↗ · GitHub ↗", both links in a new tab. It replaced the facts strip (`FactsStrip`, removed).
+- **Facts line** (`.case-facts`): one line directly under the lead, Geist Mono 13px, `--fg-2`, wrapping naturally on a phone; its links follow the inline-link rule (section 8) and never break inside a link. Case 03's line is "Based on v1.0.0-kaggle · July 2026 · Open PitchCraft ↗ · GitHub ↗" and case 04's "Written at v2.2.0 · November 2026 · Open PitchCraft ↗ · GitHub ↗", both links in a new tab. It replaced the facts strip (`FactsStrip`, removed).
 - **Back to Work** (`.ghost-link.back-link`): "← Work" sits above the eyebrow on every case, on the prose edge, with a 44px-high hit area. No separate CTA row after the title.
-- **Cover** (art direction): on PitchCraft, below `768px` the cover is a crop of the phone capture at full prose width (`pitchcraft-game5-cover-phone.webp`, 750×1612); from `768px` the desktop capture. A `<picture>` built with `getImageProps`, so only the selected source downloads; each `<source>` carries its own width/height. The cover wrapper is `.prose-wide` (52rem) and has no top margin.
+- **Cover** (art direction): on both PitchCraft cases (`CaseCover`, `src/components/shared/case-cover.tsx`), below `768px` the cover is a crop of the phone capture at full prose width (case 04 `pitchcraft-game5-cover-phone.webp`, case 03 `pitchcraft-v1-cover-phone.webp`, both 750×1612); from `768px` the desktop capture. A `<picture>` built with `getImageProps`, so only the selected source downloads; each `<source>` carries its own width/height. The cover wrapper is `.prose-wide` (52rem) and has no top margin.
 - **Framed figure** (`CaseFigure`): `figure` with a mono caption (12px, `--fg-2`, max `64ch`). Default body is a card: `--bg-2`, 1px `--hairline`, `--radius-lg`, padding `--space-6` (`--space-8` from `768px`). `bare` drops the frame for screenshots, which get a hairline and `--radius-md`. Light mode border uses the same sage `#DDE7E2` as the cards.
-- **Before/after pair** (`.before-after`): two phone captures cut to the **same height and scale** (946 CSS px at 375px wide: `pitchcraft-game5-before-crop.webp` 375×946 at 1×, and the 750×1892 after capture at 2×), so they end on one line. Side by side from `768px` (max `40rem`), stacked full width below. Mono uppercase labels "Before" / "After". Originals stay in `public/work/pitchcraft/`.
+- **Before/after pair** (`.before-after`): two phone captures cut to the **same height and scale** (946 CSS px at 375px wide: `pitchcraft-game5-before-crop.webp` 375×946 at 1×, and the 750×1892 after capture at 2×), so they end on one line. Side by side from `768px` (max `40rem`), stacked full width below. Mono uppercase labels "Before" / "After". Originals stay in `public/work/pitchcraft-v2-world-series/`.
 - **Pipeline figure** (`PitchcraftPipeline`): ordered list of steps sized by its figure, not the viewport (container query): a stacked card per step when the frame is under `30rem`, one row per step from `30rem` (index `2rem`, name `8.5rem`, text). Step: `--bg-1` (light: `--bg-0`), 1px `--hairline`, `--radius-md`. Steps 3 and 4 ("Write and check", "Validate") use an `--accent-fg` border to mark where claims are checked.
 - **Unit-chart figures** (`PitchcraftEval`): two panels (3fr / 2fr from `768px`). The two states differ in **shape as well as color**: an unmarked unit is an outlined square (transparent, 2px `--fg-2` outline, well over 3:1 on `--bg-2`); a marked unit (error / unsupported) is a filled `--accent-fg` circle (a filled pill for the 36×48 report units). Sentence units 18px. The legend repeats both shapes at 10px. The ARIA labels carry the totals. The big number is Instrument Serif 28px; the legend is mono 12px.
 
@@ -298,8 +297,7 @@ Added 2026-11-24 (Unit F).
 ### Reveal-on-scroll
 - All `<section>` elements except `.hero` fade-up on enter.
 - From `{opacity: 0, y: 16}` to `{opacity: 1, y: 0}`, duration 700ms, `cubic-bezier(0.16, 1, 0.3, 1)`.
-- Threshold 0.05, `rootMargin: '0px 0px -10% 0px'`. Trigger once.
-- **Framer Motion**: use `whileInView` with `viewport={{ once: true, margin: "0px 0px -10% 0px" }}`.
+- **Updated 2026-11-25:** the original 0.05 threshold and `-10%` bottom margin (Framer `whileInView`) are gone since Unit F. `Reveal` (`src/components/shared/reveal.tsx`) checks the live layout on each scroll frame: after the reader first scrolls, a block whose top is still below the viewport, within a quarter of a viewport (`ARM_BAND = 0.25`), is armed (hidden); it plays as soon as its top crosses the bottom edge, with no margin, or after a 1200ms failsafe. Blocks already seen are never armed. Trigger once.
 - Under `prefers-reduced-motion: reduce` (or OS animation settings disabled), content renders in its final state with no fade. This is intended behavior, not a bug.
 
 ### Card hover
