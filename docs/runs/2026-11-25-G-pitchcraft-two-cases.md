@@ -62,3 +62,10 @@ Daniel updated file 05 §2 after seeing the rebuild: it shows the cached demo sn
 - `AGENTS.md` "Contexto abierto" still has two notes that Unit F made obsolete (content invisible without JavaScript; the missing "truly visible" helper). Left as they are; outside this unit's scope.
 - Backlog O (crop the case 04 share card) stays open; this run kept that image unchanged as file 05 §3 asks.
 - No PR opened.
+
+## Codex verification (2026-11-26)
+
+- Report: `docs/runs/2026-11-25-G-codex-verify.md`, on `dev` at `0d0d087`. Verdict **FAIL** on two presentation points only: the CTA row renders the two links without the literal "·" from files 01 and 02, and the sources lists add the site's "↗" marker to external links. Daniel accepted both as site conventions on 26 Nov; recorded in file 05 §8. Link words are unchanged.
+- Every other check passed: copy outside the cases, structure and metadata, every editorial URL (HTTP 200), visual checks at 390 and 1280 px in both themes and without JavaScript, and local settings kept out of git.
+- The LinkedIn link in the footer returns HTTP 999 to automated checkers. That is LinkedIn blocking bots, not a broken link.
+- **CI run [45745244716](https://github.com/Dher10/danielherdenez-site/actions/runs/45745244716) on `0d0d087`: passed.** Guard and hook tests: 817 passed. Playwright: 153 passed.

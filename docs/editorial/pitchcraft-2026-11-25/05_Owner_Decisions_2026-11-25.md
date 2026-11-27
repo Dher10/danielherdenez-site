@@ -50,3 +50,7 @@ From now on, every major visual change to the site or to PitchCraft leaves refer
 - Content: the key pages at 1280 px and 390 px, in WebP, plus a short `README.md` with what each capture shows, the commit or tag, and the date.
 - For this unit: save the rebuilt v1 captures and the final captures of both PitchCraft case pages there.
 - Record the rule in `AGENTS.md`.
+
+## 8. Link presentation follows the site (26 Nov)
+
+Files 01 and 02 write the CTA as "Open PitchCraft ↗ · Read the ... ↗" and list sources as plain links. That is how the copy reads in markdown, not a layout instruction. On the site, the CTA row keeps the existing pattern of a primary button and a ghost link with no middle dot between them, and external links in the sources list keep the site's "↗" marker. The words of each link stay exactly as in files 01 and 02. Codex's Unit G verification flagged both points; Daniel accepted them as site conventions on 26 Nov.
